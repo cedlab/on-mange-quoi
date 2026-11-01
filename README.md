@@ -42,6 +42,11 @@ C'est une application web installable (PWA) : elle s'ouvre en plein écran et fo
   - Cases à cocher en temps réel sur tous les téléphones, ajouts à la main (« 6 œufs »).
   - « Mettre à jour » après un changement du planning conserve les coches.
   - « Courses terminées » retire les articles cochés ; la liste se partage en texte.
+- **On mange quoi ? 🎲** (dé en haut à gauche des Recettes) : une recette tirée au hasard, avec une petite animation. Le tirage favorise :
+  - la saison : légumes et fruits du mois, plats réconfortants en hiver et frais en été, bûche en décembre, crêpes en février… ;
+  - les recettes pas mangées depuis longtemps (rien de ce qui a été au menu ces 3 dernières semaines) ;
+  - les mieux notées.
+  Les raisons du choix sont affichées. Filtres : catégorie, rapide, de saison, bien notées, Thermomix. On peut planifier la recette directement, et 3 autres idées sont proposées. Dans la Semaine, chaque créneau propose aussi une idée (Ajouter, ou 🔀 pour une autre).
 - **Réglages du planning** (Plus) : nombre de personnes par repas, portion de Poupette.
 
 **À venir**
@@ -140,7 +145,7 @@ src/
   main.js, app.js        routes, onglets, porte de connexion
   firebase.js            configuration du projet Firebase
   data/                  store.js (état, temps réel), firestore-backend.js, memory-backend.js
-  logic/                 logique pure et testée : quantities.js, recipes.js, sources.js, exchange.js, text-import.js, dates.js, plan.js, aisles.js, menu-pdf.js
+  logic/                 logique pure et testée : quantities.js, recipes.js, sources.js, exchange.js, text-import.js, dates.js, plan.js, aisles.js, menu-pdf.js, suggest.js
   ui/                    dom.js, components.js, icons.js, image.js, views/
   sw.js, pwa.js          hors ligne et mises à jour
 firestore.rules          règles de sécurité (à publier dans la console)
