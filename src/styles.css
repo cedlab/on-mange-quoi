@@ -1371,3 +1371,12 @@ details summary {
   box-shadow: none;
   background: none;
 }
+
+/* Réglages Thermomix dans les étapes */
+.tm {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  color: var(--accent);
+  white-space: nowrap;
+}

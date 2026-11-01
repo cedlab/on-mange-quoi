@@ -5,6 +5,7 @@ import {
 } from '../../logic/quantities.js';
 import { CATEGORIES, category, formatMinutes, totalMinutes } from '../../logic/recipes.js';
 import { openLabel, sourceLabel, sourceType } from '../../logic/sources.js';
+import { TM_SETTING } from '../../logic/text-import.js';
 import { confirmDialog, emptyState, header, promptDecimal, sheet, toast } from '../components.js';
 import { h, setChildren } from '../dom.js';
 import { icon } from '../icons.js';
@@ -44,6 +45,19 @@ export function chooseCategory(r) {
         await store.setCategory(r.id, r.category === c.id ? null : c.id);
       },
     }, h('span', { class: 'cat-emoji' }, c.emoji), c.label))), { title: 'Catégorie' });
+}
+
+/** Texte d'une étape, réglages Thermomix (« 10 sec/vitesse 6 ») en évidence. */
+function stepText(text) {
+  const parts = [];
+  let last = 0;
+  for (const m of text.matchAll(new RegExp(TM_SETTING.source, 'gi'))) {
+    if (m.index > last) parts.push(text.slice(last, m.index));
+    parts.push(h('strong', { class: 'tm' }, m[0]));
+    last = m.index + m[0].length;
+  }
+  parts.push(text.slice(last));
+  return parts;
 }
 
 /** Texte de la recette pour le partage (WhatsApp, SMS, mail…). */
@@ -224,7 +238,7 @@ export function recipeView({ id }) {
           else done.add(i);
           li.classList.toggle('done');
         },
-      }, h('span', { class: 'step-num' }, String(n)), h('p', null, s.text));
+      }, h('span', { class: 'step-num' }, String(n)), h('p', null, stepText(s.text)));
       return li;
     });
     return h('section', { class: 'card' },

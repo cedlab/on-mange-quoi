@@ -14,7 +14,16 @@ const HEADERS = [
   ['ingredients', /^(?:les\s+)?(?:ingr[ée]dients?|liste\s+des\s+ingr[ée]dients|il\s+(?:vous\s+)?faut|ce\s+qu['’]il\s+(?:vous\s+)?faut|courses)\b/i],
   ['steps', /^(?:la\s+)?(?:pr[ée]paration|[ée]tapes?|instructions?|r[ée]alisation|recette|m[ée]thode|d[ée]roul[ée]|progression|pr[ée]parer)\b/i],
   ['notes', /^(?:notes?|astuces?|conseils?|remarques?|variantes?|le\s+petit\s+plus|info(?:rmation)?s?|nb)\b/i],
+  ['tools', /^(?:accessoires?|ustensiles?|mat[ée]riel)(?:\s+n[ée]cessaires?)?\b/i],
+  ['skip', /^(?:nutrition|valeurs?\s+nutritionnelles?|apports?\s+nutritionnels?|informations?\s+nutritionnelles?)\b/i],
 ];
+
+// Éléments des pages de recettes (Cookidoo, sites) sans intérêt ici :
+// note et nombre d'avis, difficulté, valeurs nutritionnelles…
+const NOISE = /^(?:tr[eè]s\s+facile|facile|moyen(?:ne)?|difficile|interm[ée]diaire|avanc[ée])$|^(?:difficult[ée]|niveau|co[uû]t|budget)\b|^\d+(?:[.,]\d+)?\s*(?:\/\s*5)?\s*\(?\s*\d*\s*(?:avis|[ée]valuations?|notes?|votes?)\s*\)?$|\b\d+\s*(?:k?cal|kj)\b|^(?:prot[ée]ines|glucides|lipides|fibres|calories|sodium|graisses|acides\s+gras|sel)\s*:?\s*\d/i;
+
+/** Réglages Thermomix dans le texte des étapes : « 10 sec/vitesse 6 », « 3 min/100°C/Ⓡ/vitesse Ⓢ ». */
+export const TM_SETTING = /(?:\d+(?:[.,]\d+)?\s*(?:sec|min|h)(?:\s*\d+\s*(?:sec|min))?\s*\/\s*)?(?:(?:\d+\s*°C?|Varoma)\s*\/\s*)?(?:Ⓡ\s*\/\s*|sens\s+inverse\s*\/\s*)?(?:vitesse|vit\.)\s*(?:\d+(?:[.,]\d+)?|Ⓢ|mijotage|turbo|cuill[eè]re)|\bturbo\s*\/\s*\d+(?:[.,]\d+)?\s*sec\b|\bmode\s+(?:p[ée]trin|[ée]paississement|turbo|cuisson\s+lente|sous[- ]vide|fermentation|rissoler)\b/gi;
 
 const DURATION = '(\\d+\\s*(?:h|heures?)\\s*(?:\\d+\\s*(?:min(?:utes?)?|mn)?)?|\\d+\\s*(?:min(?:utes?)?|mn))';
 const TIME_RE = new RegExp(
@@ -79,6 +88,20 @@ function headerOf(line) {
   return null;
 }
 
+/** Sous-partie d'une liste d'ingrédients écrite sans « : » (« Pâte brisée », « Garniture »). */
+const GROUP_WORDS = /^(?:pour\s+(?:la|le|les|l['’]|un|une)\s|p[âa]te\b|garniture|sauce\b|cr[èe]me\s+(?:p[âa]tissi[èe]re|anglaise|mousseline|au\s|à\s|d['’])|d[ée]cor(?:ation)?\b|gla[çc]age|finition|marinade|appareil|biscuit\b|ganache|farce\b|topping|coulis|montage|meringue|crumble|streusel|accompagnement|vinaigrette)/i;
+function isGroupTitle(l) {
+  const t = l.replace(BULLET, '').replace(/\s*:\s*$/, '').trim();
+  return t.split(/\s+/).length <= 5 && GROUP_WORDS.test(t) && parseIngredientLine(t).qty === undefined && !/[.!?]$/.test(t);
+}
+
+/** « 200 g » ou « 3 » seuls sur une ligne : la suite de l'ingrédient est à la ligne suivante. */
+function quantityOnly(l) {
+  const t = l.replace(BULLET, '').trim();
+  const p = parseIngredientLine(t);
+  return p.qty !== undefined && p.name === t;
+}
+
 const isUrl = (l) => /^(?:https?:\/\/|www\.)\S+$/i.test(l);
 
 function looksLikeStep(l) {
@@ -113,7 +136,9 @@ export function parseRecipeText(text) {
   const out = { title: '', ingredients: [], steps: [], notes: '' };
   const ingLines = [];
   const notes = [];
+  const tools = [];
   let source = null;
+  let pendingQty = null;
   let mode = null; // null (automatique) | 'ingredients' | 'steps' | 'notes'
   let autoSteps = false;
   let lastStep = null;
@@ -161,8 +186,11 @@ export function parseRecipeText(text) {
       source = { ...(source || {}), url: line };
       continue;
     }
+    if (NOISE.test(line)) continue;
     const header = headerOf(line);
     if (header) {
+      if (pendingQty) ingLines.push(pendingQty);
+      pendingQty = null;
       mode = header.kind;
       autoSteps = false;
       lastStep = null;
@@ -185,14 +213,35 @@ export function parseRecipeText(text) {
       out.title = out.title.charAt(0).toUpperCase() + out.title.slice(1);
       continue;
     }
+    if (mode === 'skip') continue;
+    if (mode === 'tools') {
+      tools.push(line.replace(BULLET, ''));
+      continue;
+    }
     if (mode === 'notes') {
       notes.push(line);
       continue;
     }
+    if ((mode === 'steps' || autoSteps) && /^\d{1,2}\.?$/.test(line)) continue; // numéro d'étape seul
     if (mode === 'steps' || autoSteps) {
       blank = wasBlank;
       addStep(line);
       blank = false;
+      continue;
+    }
+    // Quantité seule (« 200 g ») : collée à la ligne suivante (« farine »).
+    if (pendingQty) {
+      const merged = `${pendingQty} ${line.replace(BULLET, '')}`;
+      pendingQty = null;
+      ingLines.push(merged);
+      continue;
+    }
+    if (mode !== 'steps' && quantityOnly(line)) {
+      pendingQty = line.replace(BULLET, '').trim();
+      continue;
+    }
+    if ((mode === 'ingredients' || (!mode && !autoSteps)) && isGroupTitle(line)) {
+      ingLines.push(`${line.replace(BULLET, '').replace(/\s*:\s*$/, '')} :`);
       continue;
     }
     if (mode === 'ingredients') {
@@ -217,7 +266,9 @@ export function parseRecipeText(text) {
     }
   }
 
+  if (pendingQty) ingLines.push(pendingQty);
   out.ingredients = parseIngredientsText(ingLines.join('\n'));
+  if (tools.length) notes.push(`Accessoires : ${tools.join(', ')}`);
   if (notes.length) out.notes = notes.join('\n');
   if (out.totalMin && !out.prepMin) out.prepMin = out.totalMin;
   delete out.totalMin;
@@ -226,8 +277,12 @@ export function parseRecipeText(text) {
     // « Source : Nadine » : un prénom, donc une recette d'un proche.
     const short = source.title && source.title.split(/\s+/).length <= 3 && !/[.]/.test(source.title);
     const type = url ? detectSourceType(url) : short ? 'perso' : 'autre';
-    out.source = { type, ...(source.title ? { title: source.title } : {}), ...(url ? { url } : {}) };
+    const title = source.title || { cookidoo: 'Cookidoo', chronodrive: 'Chronodrive' }[type];
+    out.source = { type, ...(title ? { title } : {}), ...(url ? { url } : {}) };
   }
+  const thermomix = out.source?.type === 'cookidoo'
+    || out.steps.some((st) => st.text && new RegExp(TM_SETTING.source, 'i').test(st.text));
+  if (thermomix) out.tags = ['thermomix'];
   if (!out.title) out.title = 'Recette sans titre';
   return out;
 }
