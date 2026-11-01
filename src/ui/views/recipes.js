@@ -1,10 +1,11 @@
 // Liste des recettes : recherche, filtres, tri.
-import { navigate, store } from '../../app.js';
+import { store } from '../../app.js';
 import { allTags, CATEGORIES, category, filterRecipes, formatMinutes, totalMinutes } from '../../logic/recipes.js';
 import { SOURCE_TYPES } from '../../logic/sources.js';
 import { emptyState, header, segmented, sheet } from '../components.js';
 import { h, plural, setChildren } from '../dom.js';
 import { icon } from '../icons.js';
+import { newRecipeMenu } from './paste.js';
 
 const KEY = 'omq.recipeFilters';
 const PAGE = 60;
@@ -150,7 +151,8 @@ export function recipesView() {
       countEl.textContent = '';
       setChildren(results, emptyState('📖', 'Aucune recette pour l’instant',
         'Ajoute ta première recette ou importe un fichier de recettes.',
-        h('a', { class: 'btn primary', href: '#/recette/nouvelle' }, icon('plus', 20), 'Nouvelle recette'),
+        h('a', { class: 'btn primary', href: '#/recette/coller' }, '✨ Coller une recette'),
+        h('a', { class: 'btn ghost', href: '#/recette/nouvelle' }, icon('plus', 20), 'Saisir à la main'),
         h('a', { class: 'btn ghost', href: '#/importer' }, icon('upload', 20), 'Importer des recettes')));
       return;
     }
@@ -186,7 +188,7 @@ export function recipesView() {
 
   const el = h('div', { class: 'page' },
     header('Recettes', {
-      actions: [h('button', { class: 'icon-btn', 'aria-label': 'Nouvelle recette', onclick: () => navigate('/recette/nouvelle') }, icon('plus'))],
+      actions: [h('button', { class: 'icon-btn', 'aria-label': 'Ajouter une recette', onclick: newRecipeMenu }, icon('plus'))],
     }),
     h('div', { class: 'search-bar' }, h('div', { class: 'search-wrap' }, icon('search', 18), search), filterBtn),
     catChips,

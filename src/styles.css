@@ -1351,3 +1351,23 @@ details summary {
   cursor: pointer;
   font-weight: 700;
 }
+
+/* --- Coller une recette ------------------------------------------------- */
+
+.paste-area {
+  width: 100%;
+  min-height: 280px;
+  line-height: 1.45;
+}
+.notice {
+  margin: 0;
+  border-left: 4px solid var(--sun);
+}
+.notice p {
+  margin: 4px 0 0;
+}
+.menu.flat {
+  margin: 0;
+  box-shadow: none;
+  background: none;
+}
