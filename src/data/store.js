@@ -1,0 +1,184 @@
+// État de l'application : utilisateur connecté, accès, recettes (temps réel).
+import { OWNER_EMAIL } from '../firebase.js';
+import { cleanRecipe, searchText, validateRecipe } from '../logic/recipes.js';
+
+const MEMBER_KEY = 'omq.member';
+
+function remember(email) {
+  try {
+    if (email) localStorage.setItem(MEMBER_KEY, email);
+    else localStorage.removeItem(MEMBER_KEY);
+  } catch {
+    /* stockage indisponible */
+  }
+}
+function remembered() {
+  try {
+    return localStorage.getItem(MEMBER_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export class Store {
+  constructor(backend) {
+    this.backend = backend;
+    /** 'loading' | 'signedOut' | 'checking' | 'denied' | 'ready' | 'error' */
+    this.status = 'loading';
+    this.user = null;
+    this.error = null;
+    this.recipes = [];
+    this.byId = new Map();
+    this.loaded = false;
+    this.listeners = new Set();
+    this.unwatch = null;
+  }
+
+  subscribe(fn) {
+    this.listeners.add(fn);
+    return () => this.listeners.delete(fn);
+  }
+
+  emit(kind) {
+    for (const fn of this.listeners) fn(kind);
+  }
+
+  start() {
+    this.backend.onUser((u) => this.onUser(u));
+    return this;
+  }
+
+  async onUser(user) {
+    this.unwatch?.();
+    this.unwatch = null;
+    this.user = user;
+    this.recipes = [];
+    this.byId = new Map();
+    this.loaded = false;
+    if (!user) {
+      this.status = 'signedOut';
+      this.emit('status');
+      return;
+    }
+    this.status = 'checking';
+    this.emit('status');
+    try {
+      let members = await this.backend.getMembers();
+      if (members === null && user.email === OWNER_EMAIL) {
+        members = [OWNER_EMAIL];
+        await this.backend.setMembers(members);
+      }
+      const ok = user.email === OWNER_EMAIL || (members || []).includes(user.email);
+      this.status = ok ? 'ready' : 'denied';
+    } catch (e) {
+      if (e.code === 'permission-denied') this.status = 'denied';
+      else if (remembered() === user.email) this.status = 'ready'; // hors ligne : déjà vérifié sur ce téléphone
+      else {
+        this.status = 'error';
+        this.error = e;
+      }
+    }
+    remember(this.status === 'ready' ? user.email : null);
+    this.emit('status');
+    if (this.status === 'ready') this.watch();
+  }
+
+  watch() {
+    this.unwatch = this.backend.watchRecipes((list) => {
+      for (const r of list) r._search = searchText(r);
+      this.recipes = list;
+      this.byId = new Map(list.map((r) => [r.id, r]));
+      this.loaded = true;
+      this.emit('recipes');
+    }, (e) => {
+      console.error(e);
+      if (e.code === 'permission-denied') {
+        this.status = 'denied';
+        remember(null);
+        this.emit('status');
+      }
+    });
+  }
+
+  get activeRecipes() {
+    return this.recipes.filter((r) => !r.deleted);
+  }
+
+  get trashedRecipes() {
+    return this.recipes.filter((r) => r.deleted);
+  }
+
+  recipe(id) {
+    return this.byId.get(id) || null;
+  }
+
+  // --- Actions -----------------------------------------------------------------
+
+  /**
+   * Crée ou met à jour une recette. photo : undefined (inchangée), null
+   * (supprimée) ou { photo, thumb } (nouvelle). Retourne l'identifiant.
+   */
+  async saveRecipe(id, input, photo) {
+    const data = cleanRecipe(input);
+    const err = validateRecipe(data);
+    if (err) throw new Error(err);
+    if (photo === null) data.thumb = null;
+    else if (photo) data.thumb = photo.thumb;
+    else if (id && this.recipe(id)?.thumb) data.thumb = this.recipe(id).thumb;
+    if (id) {
+      const prev = this.recipe(id) || {};
+      await this.backend.setRecipe(id, {
+        ...data, createdAt: prev.createdAt || Date.now(), createdBy: prev.createdBy || this.user?.email || null,
+      });
+    } else {
+      id = await this.backend.addRecipe(data);
+    }
+    if (photo !== undefined) await this.backend.setPhoto(id, photo ? photo.photo : null);
+    return id;
+  }
+
+  setRating(id, rating) {
+    return this.backend.updateRecipe(id, { rating });
+  }
+
+  setCategory(id, category) {
+    return this.backend.updateRecipe(id, { category: category || null });
+  }
+
+  trash(id) {
+    return this.backend.updateRecipe(id, { deleted: true, deletedAt: Date.now() });
+  }
+
+  restore(id) {
+    return this.backend.updateRecipe(id, { deleted: false, deletedAt: null });
+  }
+
+  purge(id) {
+    return this.backend.removeRecipe(id);
+  }
+
+  getPhoto(id) {
+    return this.backend.getPhoto(id);
+  }
+
+  importRecipes(items, onProgress) {
+    return this.backend.importRecipes(items, onProgress);
+  }
+
+  getMembers() {
+    return this.backend.getMembers();
+  }
+
+  setMembers(list) {
+    return this.backend.setMembers(list);
+  }
+
+  signIn() {
+    return this.backend.signIn();
+  }
+
+  signOut() {
+    remember(null);
+    return this.backend.signOut();
+  }
+}

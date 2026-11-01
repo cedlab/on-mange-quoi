@@ -1,0 +1,25 @@
+{
+  "name": "on-mange-quoi",
+  "private": true,
+  "version": "0.1.0",
+  "description": "On mange quoi ? Recettes, planning des repas, liste de courses et placards de la famille (PWA).",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "icons": "node scripts/generate-icons.mjs"
+  },
+  "devDependencies": {
+    "vite": "^8.3.4",
+    "vitest": "^5.0.5"
+  },
+  "engines": {
+    "node": ">=20.19"
+  },
+  "dependencies": {
+    "firebase": "^13.0.0"
+  }
+}

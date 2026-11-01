@@ -1,0 +1,56 @@
+rules_version = '2';
+
+// Règles de sécurité Firestore de « On mange quoi ? ».
+// À publier dans la console Firebase : Firestore Database → Règles → coller ce
+// fichier → Publier. (Elles ne sont pas déployées automatiquement.)
+//
+// Principe : toute la base est réservée aux membres de la famille, connectés
+// avec Google. La liste des membres est dans le document config/access
+// ({ members: ["adresse@gmail.com", …] }) et se gère depuis l'app
+// (Plus → Membres de la famille) : pas besoin de republier les règles pour
+// ajouter quelqu'un. L'adresse ci-dessous est toujours autorisée, pour ne
+// jamais pouvoir se retrouver enfermé dehors.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null
+        && request.auth.token.email != null
+        && request.auth.token.email_verified == true;
+    }
+
+    function email() {
+      return request.auth.token.email.lower();
+    }
+
+    function isOwner() {
+      return signedIn() && email() == 'cedric.carbonell@gmail.com';
+    }
+
+    function isMember() {
+      return isOwner() || (signedIn()
+        && exists(/databases/$(database)/documents/config/access)
+        && email() in get(/databases/$(database)/documents/config/access).data.members);
+    }
+
+    // Tout le contenu de la famille : recettes, photos, planning, courses…
+    match /{collection}/{rest=**} {
+      allow read: if isMember();
+      allow write: if isMember() && collection != 'config';
+    }
+
+    // Réglages partagés. La liste des membres doit rester une liste
+    // d'adresses de taille raisonnable.
+    match /config/{docId} {
+      allow write: if isMember()
+        && (docId != 'access'
+          || (request.resource.data.members is list && request.resource.data.members.size() <= 50));
+    }
+
+    // Recettes partagées explicitement (lien de lecture seule, étape 4) :
+    // lisibles par qui possède le lien, mais impossibles à lister.
+    match /sharedRecipes/{shareId} {
+      allow get: if true;
+    }
+  }
+}
