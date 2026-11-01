@@ -74,7 +74,7 @@ describe('relais : sécurité', () => {
     expect(pre.status).toBe(204);
     expect(pre.headers.get('Access-Control-Allow-Origin')).toBe('https://cedlab.github.io');
     expect((await worker.fetch(req('https://w.dev/?ping=1', { Authorization: '' }), {}, {}, deps)).status).toBe(401);
-    expect(await (await worker.fetch(req('https://w.dev/?ping=1'), {}, {}, deps)).json()).toEqual({ ok: true, version: 1 });
+    expect(await (await worker.fetch(req('https://w.dev/?ping=1'), {}, {}, deps)).json()).toEqual({ ok: true, version: 2 });
     expect((await worker.fetch(req('https://w.dev/?url=https://127.0.0.1/'), {}, {}, deps)).status).toBe(400);
   });
 });

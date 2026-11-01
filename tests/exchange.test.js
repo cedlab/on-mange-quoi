@@ -32,3 +32,27 @@ describe('import', () => {
     expect(duplicateKey({ title: 'Crème Brûlée', source: { title: 'Moi' } })).toBe('creme brulee|moi');
   });
 });
+
+describe('import collé (assistant, Claude dans Chrome)', () => {
+  it('accepte un tableau dans un bloc ```json, ingrédients et étapes en texte, photo par adresse', () => {
+    const text = '```json\n' + JSON.stringify([{
+      title: 'Quiche lorraine', servings: 6, prepMin: 15, cookMin: 45, category: 'plat', tags: ['thermomix'],
+      source: { type: 'cookidoo', title: 'Cookidoo', url: 'https://cookidoo.fr/recipes/recipe/fr-FR/r130599' },
+      imageUrl: 'https://assets.tmecosys.com/image/quiche.jpg',
+      ingredients: ['Pâte :', '200 g de farine', '100 g de beurre', 'Garniture :', '3 œufs'],
+      steps: ['# La pâte', 'Mixer 10 sec/vitesse 6.', 'Cuire 35 min.'],
+    }]) + '\n```';
+    const { items, errors } = parseImport(text, [{ title: 'Autre', source: { url: 'https://cookidoo.fr/x' } }]);
+    expect(errors).toEqual([]);
+    const [it1] = items;
+    expect(it1.imageUrl).toBe('https://assets.tmecosys.com/image/quiche.jpg');
+    expect(it1.recipe.ingredients.map((i) => [i.group, i.qty, i.name])).toEqual([['Pâte', 200, 'farine'], ['Pâte', 100, 'beurre'], ['Garniture', 3, 'œufs']]);
+    expect(it1.recipe.steps).toEqual([{ section: 'La pâte' }, { text: 'Mixer 10 sec/vitesse 6.' }, { text: 'Cuire 35 min.' }]);
+    expect(it1.duplicate).toBe(false);
+  });
+  it('repère un doublon par le lien de la recette', () => {
+    const one = { title: 'Quiche', source: { type: 'cookidoo', title: 'Cookidoo', url: 'https://cookidoo.fr/r/1' } };
+    const { items } = parseImport(JSON.stringify({ recipes: [{ ...one, title: 'Quiche (bis)' }] }), [{ ...one, title: 'Ma quiche' }]);
+    expect(items[0].duplicate).toBe(true);
+  });
+});
