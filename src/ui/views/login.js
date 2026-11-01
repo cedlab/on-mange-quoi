@@ -7,6 +7,8 @@ const AUTH_ERRORS = {
   'auth/network-request-failed': 'Pas de connexion internet.',
   'auth/unauthorized-domain': "Ce site n'est pas autorisé dans Firebase (Authentication → Paramètres → Domaines autorisés).",
   'auth/operation-not-allowed': "La connexion Google n'est pas activée dans Firebase.",
+  'auth/redirect-cancelled-by-user': 'Connexion annulée.',
+  'auth/web-storage-unsupported': 'Ce navigateur bloque le stockage (navigation privée ?). Essaie dans Safari ou Chrome en mode normal.',
 };
 
 function brand(subtitle) {
@@ -54,8 +56,12 @@ export function gateView(store) {
       }
     },
   }, h('span', { class: 'g-logo', 'aria-hidden': 'true' }, 'G'), 'Se connecter avec Google');
+  const err = store.authError;
   return h('div', { class: 'gate' },
     brand('Les recettes, les menus de la semaine et les courses de la famille.'),
+    err && h('div', { class: 'card stack' },
+      h('strong', null, 'La connexion n’a pas abouti'),
+      h('p', { class: 'small muted' }, AUTH_ERRORS[err.code] || `${err.code || ''} ${err.message || ''}`.trim())),
     btn,
     h('p', { class: 'small muted center-text' }, 'Application privée : seuls les membres de la famille y ont accès.'));
 }

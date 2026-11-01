@@ -27,6 +27,7 @@ export class Store {
     this.status = 'loading';
     this.user = null;
     this.error = null;
+    this.authError = null;
     this.recipes = [];
     this.byId = new Map();
     this.loaded = false;
@@ -44,7 +45,11 @@ export class Store {
   }
 
   start() {
-    this.backend.onUser((u) => this.onUser(u));
+    this.backend.onUser((u) => this.onUser(u), (e) => {
+      // Échec au retour de la page de connexion Google : affiché sur l'écran de connexion.
+      this.authError = e;
+      this.emit('status');
+    });
     return this;
   }
 

@@ -41,6 +41,9 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
+  // Pages de connexion Firebase (copiées dans __/auth/ au déploiement) : jamais
+  // interceptées ni mises en cache, elles doivent toujours venir du réseau.
+  if (url.pathname.includes('/__/')) return;
 
   if (req.mode === 'navigate') {
     // Application monopage : toute navigation renvoie index.html (en cache).
