@@ -52,6 +52,7 @@ const TABS = [
   { id: 'recipes', href: '#/', label: 'Recettes', icon: 'book' },
   { id: 'shopping', href: '#/courses', label: 'Courses', icon: 'cart' },
   { id: 'pantry', href: '#/placards', label: 'Placards', icon: 'fridge' },
+  { id: 'stats', href: '#/stats', label: 'Stats', icon: 'chart' },
   { id: 'more', href: '#/plus', label: 'Plus', icon: 'more' },
 ];
 
