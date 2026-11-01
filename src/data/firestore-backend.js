@@ -72,6 +72,7 @@ export function createFirebaseBackend() {
       }
     },
     signOut: () => signOut(auth),
+    getIdToken: () => auth.currentUser?.getIdToken() || Promise.resolve(null),
 
     // --- Membres ---------------------------------------------------------------
     async getMembers() {

@@ -10,6 +10,7 @@ import { recipeFormView } from './ui/views/recipe-form.js';
 import { importView } from './ui/views/import.js';
 import { pasteView } from './ui/views/paste.js';
 import { ideaView } from './ui/views/idea.js';
+import { findUrl, linkImportView, proxySettingsView } from './ui/views/link-import.js';
 import { statsView } from './ui/views/stats.js';
 import { comingSoonView, membersView, moreView, settingsView, sortView, trashView } from './ui/views/more.js';
 import { weekView } from './ui/views/week.js';
@@ -18,9 +19,20 @@ import { shoppingView } from './ui/views/shopping.js';
 initTheme();
 registerServiceWorker();
 
+// Partage vers l'app (Android : Partager → On mange quoi) : ?url=…&text=…
+{
+  const sp = new URLSearchParams(location.search);
+  if (sp.has('url') || sp.has('text')) {
+    const u = findUrl(sp.get('url')) || findUrl(sp.get('text'));
+    history.replaceState(null, '', `${location.pathname}${u ? `#/recette/lien?url=${encodeURIComponent(u)}` : '#/'}`);
+  }
+}
+
 route('/', recipesView, { tab: 'recipes' });
 route('/recette/nouvelle', (_, query) => recipeFormView({}, query), { tab: 'recipes' });
 route('/recette/coller', pasteView, { tab: 'recipes' });
+route('/recette/lien', linkImportView, { tab: 'recipes' });
+route('/import-lien', proxySettingsView, { tab: 'more' });
 route('/idee', ideaView, { tab: 'recipes' });
 route('/recette/:id/modifier', recipeFormView, { tab: 'recipes' });
 route('/recette/:id', recipeView, { tab: 'recipes', live: true });

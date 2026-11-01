@@ -306,6 +306,10 @@ export class Store {
     return this.backend.signIn();
   }
 
+  getIdToken() {
+    return this.backend.getIdToken();
+  }
+
   signOut() {
     remember(null);
     return this.backend.signOut();
