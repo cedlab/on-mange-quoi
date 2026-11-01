@@ -1,0 +1,7 @@
+# Configuration du relais d'import par lien pour Cloudflare Workers.
+# Permet de déployer le relais directement depuis ce dépôt GitHub
+# (Cloudflare → Workers → Connecter un dépôt, répertoire racine : « worker »),
+# sans passer par l'éditeur de code du tableau de bord.
+name = "omq-recettes"
+main = "recipe-proxy.js"
+compatibility_date = "2025-10-01"

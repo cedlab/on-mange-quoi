@@ -159,7 +159,8 @@ src/
   ui/                    dom.js, components.js, icons.js, image.js, views/
   sw.js, pwa.js          hors ligne et mises à jour
 firestore.rules          règles de sécurité (à publier dans la console)
-worker/recipe-proxy.js   relais d'import par lien (à coller dans un Worker Cloudflare)
+worker/recipe-proxy.js   relais d'import par lien (Worker Cloudflare)
+worker/wrangler.toml     sa configuration (déploiement depuis GitHub, répertoire racine « worker »)
 ```
 
 ### Données Firestore
