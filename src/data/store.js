@@ -1,6 +1,10 @@
 // État de l'application : utilisateur connecté, accès, recettes (temps réel).
 import { OWNER_EMAIL } from '../firebase.js';
 import { cleanRecipe, searchText, validateRecipe } from '../logic/recipes.js';
+import { guessAisle, ingredientKey } from '../logic/aisles.js';
+import { weekStart } from '../logic/dates.js';
+import { buildShoppingList, DEFAULT_SETTINGS, entriesBetween, mergeShopping, SLOTS } from '../logic/plan.js';
+import { parseIngredientLine, toBase } from '../logic/quantities.js';
 
 const MEMBER_KEY = 'omq.member';
 
@@ -33,6 +37,17 @@ export class Store {
     this.loaded = false;
     this.listeners = new Set();
     this.unwatch = null;
+    this.resetPlanning();
+  }
+
+  resetPlanning() {
+    this.plans = {};
+    this.plansLoaded = false;
+    this.settings = { ...DEFAULT_SETTINGS };
+    this.aisleOverrides = {};
+    this.shopping = [];
+    this.shoppingMeta = null;
+    this.shoppingLoaded = false;
   }
 
   subscribe(fn) {
@@ -56,6 +71,7 @@ export class Store {
   async onUser(user) {
     this.unwatch?.();
     this.unwatch = null;
+    this.resetPlanning();
     this.user = user;
     this.recipes = [];
     this.byId = new Map();
@@ -89,20 +105,50 @@ export class Store {
   }
 
   watch() {
-    this.unwatch = this.backend.watchRecipes((list) => {
-      for (const r of list) r._search = searchText(r);
-      this.recipes = list;
-      this.byId = new Map(list.map((r) => [r.id, r]));
-      this.loaded = true;
-      this.emit('recipes');
-    }, (e) => {
+    const onError = (e) => {
       console.error(e);
       if (e.code === 'permission-denied') {
         this.status = 'denied';
         remember(null);
         this.emit('status');
       }
-    });
+    };
+    const b = this.backend;
+    const stops = [
+      b.watchCol('plans', (list) => {
+        this.plans = Object.fromEntries(list.map((p) => [p.id, p]));
+        this.plansLoaded = true;
+        this.emit('plans');
+      }, onError),
+      b.watchDocAt('config/settings', (d) => {
+        this.settings = { ...DEFAULT_SETTINGS, ...(d || {}) };
+        this.emit('plans');
+      }, onError),
+      b.watchDocAt('config/aisles', (d) => {
+        this.aisleOverrides = d?.map || {};
+        this.emit('shopping');
+      }, onError),
+      b.watchDocAt('config/shopping', (d) => {
+        this.shoppingMeta = d;
+        this.emit('shopping');
+      }, onError),
+      b.watchCol('shoppingItems', (list) => {
+        this.shopping = list;
+        this.shoppingLoaded = true;
+        this.emit('shopping');
+      }, onError),
+    ];
+    const stopRecipes = this.backend.watchRecipes((list) => {
+      for (const r of list) r._search = searchText(r);
+      this.recipes = list;
+      this.byId = new Map(list.map((r) => [r.id, r]));
+      this.loaded = true;
+      this.emit('recipes');
+    }, onError);
+    this.unwatch = () => {
+      stopRecipes();
+      for (const stop of stops) stop();
+    };
   }
 
   get activeRecipes() {
@@ -168,6 +214,84 @@ export class Store {
 
   importRecipes(items, onProgress) {
     return this.backend.importRecipes(items, onProgress);
+  }
+
+  // --- Planning ------------------------------------------------------------------
+
+  /** Remplace les entrées d'un créneau (midi, midiP, soir, soirP) d'un jour. */
+  setSlot(date, slot, entries) {
+    return this.backend.put(`plans/${weekStart(date)}`, { days: { [date]: { [slot]: entries } } }, { merge: true });
+  }
+
+  /** Vide les jours donnés. */
+  async clearDays(dates) {
+    const byWeek = new Map();
+    for (const d of dates) {
+      const w = weekStart(d);
+      if (!byWeek.has(w)) byWeek.set(w, {});
+      byWeek.get(w)[d] = Object.fromEntries(SLOTS.map((s) => [s.id, []]));
+    }
+    await this.backend.writeOps([...byWeek.entries()].map(([w, days]) => ({ op: 'set', path: `plans/${w}`, data: { days }, merge: true })));
+  }
+
+  saveSettings(patch) {
+    return this.backend.put('config/settings', patch, { merge: true });
+  }
+
+  // --- Liste de courses ---------------------------------------------------------
+
+  /** (Re)génère la liste depuis le planning de la période, en gardant coches et ajouts. */
+  async generateShopping(from, to) {
+    const generated = buildShoppingList(entriesBetween(this.plans, from, to), this.byId, { aisleOverrides: this.aisleOverrides });
+    const { upserts, removals } = mergeShopping(this.shopping, generated);
+    const ops = [
+      ...removals.map((id) => ({ op: 'delete', path: `shoppingItems/${id}` })),
+      ...upserts.map(({ id, ...item }) => ({
+        op: 'set', path: `shoppingItems/${id || this.backend.newDocId('shoppingItems')}`, data: item,
+      })),
+      { op: 'set', path: 'config/shopping', data: { from, to, generatedAt: Date.now() } },
+    ];
+    await this.backend.writeOps(ops);
+    return generated.length;
+  }
+
+  toggleItem(id, checked) {
+    return this.backend.patch(`shoppingItems/${id}`, { checked });
+  }
+
+  /** Ajout à la main : « 6 œufs », « lessive ». */
+  addItem(text) {
+    const p = parseIngredientLine(text);
+    const key = ingredientKey(p.name) || p.name;
+    const amounts = p.qty !== undefined ? [toBase(p.qty, p.unit)].map((a) => ({ qty: a.qty, unit: a.unit || null })) : [];
+    const id = this.backend.newDocId('shoppingItems');
+    return this.backend.put(`shoppingItems/${id}`, {
+      key, name: p.name, amounts, aisle: guessAisle(p.name, this.aisleOverrides, key), manual: true, checked: false, recipes: [],
+    });
+  }
+
+  /** Change le rayon d'un article et le retient pour les prochaines listes. */
+  async setItemAisle(item, aisle) {
+    await this.backend.writeOps([
+      { op: 'update', path: `shoppingItems/${item.id}`, data: { aisle, aisleFixed: true } },
+      { op: 'set', path: 'config/aisles', data: { map: { [item.key]: aisle } }, merge: true },
+    ]);
+  }
+
+  deleteItem(id) {
+    return this.backend.del(`shoppingItems/${id}`);
+  }
+
+  /** « Courses terminées » : retire les articles cochés. */
+  clearChecked() {
+    return this.backend.writeOps(this.shopping.filter((i) => i.checked).map((i) => ({ op: 'delete', path: `shoppingItems/${i.id}` })));
+  }
+
+  clearShopping() {
+    return this.backend.writeOps([
+      ...this.shopping.map((i) => ({ op: 'delete', path: `shoppingItems/${i.id}` })),
+      { op: 'delete', path: 'config/shopping' },
+    ]);
   }
 
   getMembers() {

@@ -5,7 +5,7 @@ import { buildExport } from '../../logic/exchange.js';
 import { CATEGORIES } from '../../logic/recipes.js';
 import { checkForUpdate, isIOS, isStandalone } from '../../pwa.js';
 import { applyTheme, getTheme } from '../../theme.js';
-import { confirmDialog, emptyState, header, promptText, segmented, sheet, toast } from '../components.js';
+import { confirmDialog, emptyState, header, promptText, segmented, sheet, stepper, toast } from '../components.js';
 import { formatDate, h, plural, setChildren } from '../dom.js';
 import { icon } from '../icons.js';
 import { recipeThumb } from './recipes.js';
@@ -85,6 +85,7 @@ export function moreView() {
       }, icon('logout'))),
     h('div', { class: 'menu' },
       item('#/membres', 'users', 'Membres de la famille', 'Qui peut utiliser l’app'),
+      item('#/reglages', 'calendar', 'Réglages du planning', `${store.settings.familyServings} pers. par repas, Poupette : ${String(store.settings.childServings).replace('.', ',')} portion`),
       item('#/recette/coller', 'edit', 'Coller une recette', 'Depuis tes notes, un message, une page web'),
       item('#/importer', 'upload', 'Importer des recettes', 'Fichier JSON'),
       backupBtn,
@@ -230,3 +231,20 @@ export function comingSoonView(title, emoji, text, step) {
     emptyState(emoji, `${title} : bientôt`, text, h('p', { class: 'small muted' }, `Arrive à l’étape ${step}.`)));
 }
 
+
+export function settingsView() {
+  const st = store.settings;
+  const save = (patch) => store.saveSettings(patch).catch((e) => toast(`Non enregistré : ${e.message}`));
+  const fmt = (v) => String(v).replace('.', ',');
+  return h('div', { class: 'page' }, header('Réglages du planning', { back: '#/plus' }),
+    h('div', { class: 'stack' },
+      h('div', { class: 'card stack' },
+        h('h2', null, 'Repas de la famille'),
+        h('p', { class: 'small muted' }, 'Nombre de portions proposé quand on ajoute une recette au Midi ou au Soir.'),
+        stepper({ value: st.familyServings, min: 1, max: 20, label: 'Personnes', format: (v) => `${v} pers.`, onchange: (v) => save({ familyServings: v }) })),
+      h('div', { class: 'card stack' },
+        h('h2', null, '👧 Poupette'),
+        h('p', { class: 'small muted' }, 'Portion proposée pour les lignes Poupette (0,5 = une demi-portion d’adulte). Ses repas comptent dans la liste de courses.'),
+        stepper({ value: st.childServings, min: 0.5, max: 4, step: 0.5, label: 'Portion de Poupette', format: (v) => `${fmt(v)} portion`, onchange: (v) => save({ childServings: v }) })),
+      h('p', { class: 'small muted' }, 'La semaine va du samedi au vendredi, comme le menu papier.')));
+}
