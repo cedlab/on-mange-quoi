@@ -36,21 +36,24 @@ jobs:
       - name: Pages de connexion Firebase sur le même domaine
         run: |
           set -euo pipefail
-          src=https://on-mange-quoi-a0c23.firebaseapp.com/__/auth
-          out=dist/__/auth
-          mkdir -p "$out"
-          curl -fsSL "$src/handler" -o "$out/handler.html"
-          curl -fsSL "$src/handler.js" -o "$out/handler.js"
-          curl -fsSL "$src/experiments.js" -o "$out/experiments.js"
-          curl -fsSL "$src/iframe" -o "$out/iframe.html"
-          curl -fsSL "$src/iframe.js" -o "$out/iframe.js"
-          # L'app est dans /on-mange-quoi/ : on corrige les chemins absolus des scripts.
-          sed -i -E 's#(src|href)="/__/#\1="/on-mange-quoi/__/#g' "$out/handler.html" "$out/iframe.html"
-          echo "--- handler.html"; cat "$out/handler.html"
-          echo "--- iframe.html"; cat "$out/iframe.html"
-          echo "--- chemins absolus restant dans les scripts :"
-          grep -o '"/__/[^"]*"' "$out"/*.js | sort | uniq -c || true
-          ls -la "$out"
+          src=https://on-mange-quoi-a0c23.firebaseapp.com/__
+          out=dist/__
+          mkdir -p "$out/auth" "$out/firebase"
+          curl -fsSL "$src/auth/handler" -o "$out/auth/handler.html"
+          curl -fsSL "$src/auth/handler.js" -o "$out/auth/handler.js"
+          curl -fsSL "$src/auth/experiments.js" -o "$out/auth/experiments.js"
+          curl -fsSL "$src/auth/iframe" -o "$out/auth/iframe.html"
+          curl -fsSL "$src/auth/iframe.js" -o "$out/auth/iframe.js"
+          curl -fsSL "$src/firebase/init.json" -o "$out/firebase/init.json"
+          # L'app est dans /on-mange-quoi/ : tous les chemins absolus « /__/ »
+          # (scripts, adresse de retour, init.json) sont déplacés sous ce préfixe.
+          sed -i -E 's#(["'"'"'])/__/#\1/on-mange-quoi/__/#g' "$out"/auth/*
+          echo "--- handler.html"; cat "$out/auth/handler.html"
+          echo "--- iframe.html"; cat "$out/auth/iframe.html"
+          echo "--- chemins absolus dans les scripts :"
+          grep -oE '["'"'"'][^"'"'"']*/__/[^"'"'"']*["'"'"']' "$out"/auth/*.js | sort | uniq -c || true
+          if grep -qE '["'"'"']/__/' "$out"/auth/*; then echo "Chemin /__/ non corrigé" >&2; exit 1; fi
+          ls -la "$out/auth" "$out/firebase"
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
