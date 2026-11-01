@@ -47,6 +47,11 @@ C'est une application web installable (PWA) : elle s'ouvre en plein écran et fo
   - les recettes pas mangées depuis longtemps (rien de ce qui a été au menu ces 3 dernières semaines) ;
   - les mieux notées.
   Les raisons du choix sont affichées. Filtres : catégorie, rapide, de saison, bien notées, Thermomix. On peut planifier la recette directement, et 3 autres idées sont proposées. Dans la Semaine, chaque créneau propose aussi une idée (Ajouter, ou 🔀 pour une autre).
+- **Stats** (onglet) : ce qu'on mange d'après le planning, sur 4 semaines, 3 mois, 12 mois, tout l'historique ou une période choisie au calendrier.
+  - En chiffres : nombre de repas, part de « fait maison », recettes différentes, part de plats de saison, note moyenne, repas de Poupette (dont « comme les grands »).
+  - En classements : recettes les plus cuisinées, plats par semaine, catégories, origine des recettes, repas sans recette (Restes, Cantine…), ingrédients les plus présents, jours les plus remplis.
+  - « À refaire bientôt » : recettes bien notées oubliées depuis 3 mois.
+  - Chiffres de la collection.
 - **Réglages du planning** (Plus) : nombre de personnes par repas, portion de Poupette.
 
 **À venir**
@@ -145,7 +150,7 @@ src/
   main.js, app.js        routes, onglets, porte de connexion
   firebase.js            configuration du projet Firebase
   data/                  store.js (état, temps réel), firestore-backend.js, memory-backend.js
-  logic/                 logique pure et testée : quantities.js, recipes.js, sources.js, exchange.js, text-import.js, dates.js, plan.js, aisles.js, menu-pdf.js, suggest.js
+  logic/                 logique pure et testée : quantities.js, recipes.js, sources.js, exchange.js, text-import.js, dates.js, plan.js, aisles.js, menu-pdf.js, suggest.js, stats.js
   ui/                    dom.js, components.js, icons.js, image.js, views/
   sw.js, pwa.js          hors ligne et mises à jour
 firestore.rules          règles de sécurité (à publier dans la console)
