@@ -1,0 +1,35 @@
+# --- Dépendances et compilation ---
+node_modules/
+dist/
+coverage/
+*.log
+.DS_Store
+.env
+.env.*
+
+# --- CONFIDENTIALITÉ : le dépôt est public ---
+# Aucune recette, aucun PDF, aucune donnée personnelle ne doit être commitée.
+# Tout est stocké dans Firestore. Les fichiers d'import/export restent sur
+# l'ordinateur ou le téléphone. (Garde-fou complémentaire : tests/privacy.test.js)
+*.pdf
+*.zip
+*.z[0-9][0-9]
+*.7z
+*.7z.*
+*.json
+!package.json
+!package-lock.json
+*.csv
+*.xlsx
+*.txt
+*.jpg
+*.jpeg
+*.heic
+*.webp
+imports/
+exports/
+donnees/
+data-prive/
+*recette*.*
+!src/**
+!tests/**
