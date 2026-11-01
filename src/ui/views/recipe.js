@@ -3,7 +3,9 @@ import { navigate, store } from '../../app.js';
 import {
   factorForIngredient, factorForServings, formatQuantity, formatServings, ingredientToLine, unitLabel,
 } from '../../logic/quantities.js';
-import { CATEGORIES, category, formatMinutes, totalMinutes } from '../../logic/recipes.js';
+import {
+  CATEGORIES, category, formatMinutes, formatRating, MAX_STARS, normalizeRating, starFills, totalMinutes,
+} from '../../logic/recipes.js';
 import { openLabel, sourceLabel, sourceType } from '../../logic/sources.js';
 import { TM_SETTING } from '../../logic/text-import.js';
 import { confirmDialog, emptyState, header, promptDecimal, sheet, toast } from '../components.js';
@@ -19,20 +21,23 @@ let wakeLock = null;
 export const photoCache = new Map();
 
 function starInput(r) {
-  const wrap = h('div', { class: 'stars-input', role: 'radiogroup', 'aria-label': 'Note' });
-  for (let i = 1; i <= 5; i++) {
-    wrap.append(h('button', {
-      type: 'button', class: `star-btn ${i <= (r.rating || 0) ? 'on' : ''}`, 'aria-label': `${i} étoile${i > 1 ? 's' : ''}`,
-      onclick: async () => {
-        const v = r.rating === i ? 0 : i;
-        try {
-          await store.setRating(r.id, v);
-        } catch (e) {
-          toast(`Note non enregistrée : ${e.message}`);
-        }
-      },
-    }, '★'));
-  }
+  const wrap = h('div', { class: 'stars-input', role: 'radiogroup', 'aria-label': `Note : ${formatRating(r.rating)} sur ${MAX_STARS}` });
+  const save = async (value) => {
+    const v = normalizeRating(r.rating) === value ? 0 : value;
+    try {
+      await store.setRating(r.id, v);
+    } catch (e) {
+      toast(`Note non enregistrée : ${e.message}`);
+    }
+  };
+  // Chaque étoile a deux moitiés : à gauche la demi-étoile, à droite l'étoile entière.
+  const half = (value, side) => h('button', {
+    type: 'button', class: `star-half ${side}`, role: 'radio', 'aria-checked': String(normalizeRating(r.rating) === value),
+    'aria-label': `${formatRating(value)} sur ${MAX_STARS}`, onclick: () => save(value),
+  });
+  starFills(r.rating).forEach((f, i) => wrap.append(h('span', { class: 'star-cell' }, '★',
+    h('span', { class: 'star-fill', style: { width: `${f * 100}%` } }, '★'),
+    half(i + 0.5, 'left'), half(i + 1, 'right'))));
   return wrap;
 }
 

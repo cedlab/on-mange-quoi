@@ -41,6 +41,28 @@ export function formatMinutes(min) {
   return m ? `${h} h ${String(m).padStart(2, '0')}` : `${h} h`;
 }
 
+// --- Notes en étoiles (demi-étoiles comprises) --------------------------------
+
+export const MAX_STARS = 5;
+
+/** Note ramenée entre 0 et 5, au demi-point près. */
+export function normalizeRating(v) {
+  const n = Number(v);
+  if (!Number.isFinite(n) || n <= 0) return 0;
+  return Math.min(MAX_STARS, Math.round(n * 2) / 2);
+}
+
+/** Remplissage de chaque étoile (1, 0,5 ou 0) pour l'affichage. */
+export function starFills(rating) {
+  const r = normalizeRating(rating);
+  return Array.from({ length: MAX_STARS }, (_, i) => Math.max(0, Math.min(1, r - i)));
+}
+
+/** « 3,5 » */
+export function formatRating(rating) {
+  return String(normalizeRating(rating)).replace('.', ',');
+}
+
 const int = (v) => {
   const n = Math.round(Number(v));
   return Number.isFinite(n) && n > 0 ? n : null;
@@ -56,7 +78,7 @@ export function cleanRecipe(input) {
       .filter((s) => s && (String(s.text || '').trim() || String(s.section || '').trim()))
       .map((s) => (s.section ? { section: String(s.section).trim() } : { text: String(s.text).trim() })),
     tags: [...new Set((input.tags || []).map((t) => String(t).trim().toLowerCase()).filter(Boolean))],
-    rating: Math.min(5, Math.max(0, Math.round(Number(input.rating) || 0))),
+    rating: normalizeRating(input.rating),
   };
   for (const k of ['servings', 'prepMin', 'cookMin', 'restMin']) {
     const v = int(input[k]);

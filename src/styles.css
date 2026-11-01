@@ -966,19 +966,44 @@ textarea.input {
 }
 .stars-input {
   display: inline-flex;
+  gap: 2px;
+  font-size: 2.1rem;
 }
-.star-btn {
-  width: 40px;
-  height: 42px;
+.star-cell {
+  position: relative;
+  display: inline-block;
+  color: var(--line);
+  line-height: 1;
+}
+.star-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  overflow: hidden;
+  color: var(--sun);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.stars-view {
+  display: inline-flex;
+  gap: 1px;
+}
+.star-half {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  padding: 0;
   border: 0;
   background: none;
-  color: var(--line);
-  font-size: 1.7rem;
-  line-height: 1;
   cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
-.star-btn.on {
-  color: var(--sun);
+.star-half.left {
+  left: 0;
+}
+.star-half.right {
+  right: 0;
 }
 .times {
   display: flex;
