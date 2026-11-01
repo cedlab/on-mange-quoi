@@ -8,7 +8,9 @@ import {
 } from '../../logic/recipes.js';
 import { openLabel, sourceLabel, sourceType } from '../../logic/sources.js';
 import { TM_SETTING } from '../../logic/text-import.js';
-import { confirmDialog, emptyState, header, promptDecimal, sheet, toast } from '../components.js';
+import { confirmDialog, emptyState, header, promptDecimal, segmented, sheet, stepper, toast } from '../components.js';
+import { addDays, dayName, dayNumber, formatShort, todayISO } from '../../logic/dates.js';
+import { SLOTS, slotEntries } from '../../logic/plan.js';
 import { h, setChildren } from '../dom.js';
 import { icon } from '../icons.js';
 
@@ -63,6 +65,44 @@ function stepText(text) {
   }
   parts.push(text.slice(last));
   return parts;
+}
+
+/** « Planifier » : choisir le jour, le repas et les portions. */
+function planSheet(r) {
+  const today = todayISO();
+  let date = today;
+  let slotId = 'soir';
+  let servings = store.settings.familyServings;
+  const days = Array.from({ length: 14 }, (_, i) => addDays(today, i));
+  const body = h('div', { class: 'stack' });
+  const servingStepper = stepper({ value: servings, min: 0.5, max: 30, step: 0.5, label: 'Portions', format: (v) => `${String(v).replace('.', ',')} pers.`, onchange: (v) => { servings = v; } });
+  function draw() {
+    setChildren(body,
+      h('div', { class: 'plan-days' }, days.map((d) => h('button', {
+        class: `day-pill ${d === date ? 'selected' : ''} ${d === today ? 'today' : ''}`, onclick: () => { date = d; draw(); },
+      }, h('small', null, dayName(d).slice(0, 3)), h('strong', null, String(dayNumber(d)))))),
+      segmented(SLOTS.map((s) => ({ value: s.id, label: s.child ? `Poupette ${s.id === 'midiP' ? 'midi' : 'soir'}` : s.label })), slotId, (v) => {
+        slotId = v;
+        servings = SLOTS.find((s) => s.id === v).child ? store.settings.childServings : store.settings.familyServings;
+        servingStepper.setValue(servings);
+      }, { className: 'wrap-seg' }),
+      servingStepper,
+      h('button', {
+        class: 'btn primary big', onclick: async () => {
+          const entries = slotEntries(store.plans, date, slotId);
+          try {
+            await store.setSlot(date, slotId, [...entries, { recipeId: r.id, title: r.title, servings }]);
+            s.close();
+            const label = SLOTS.find((x) => x.id === slotId);
+            toast(`Ajoutée au planning : ${formatShort(date)}, ${label.child ? 'Poupette' : label.label.toLowerCase()}.`, { action: 'Voir', onAction: () => navigate(`/semaine?date=${date}`) });
+          } catch (e) {
+            toast(`Non enregistré : ${e.message}`);
+          }
+        },
+      }, icon('calendar', 20), 'Ajouter au planning'));
+  }
+  draw();
+  const s = sheet(body, { title: `Planifier « ${r.title} »` });
 }
 
 /** Texte de la recette pour le partage (WhatsApp, SMS, mail…). */
@@ -287,6 +327,7 @@ export function recipeView({ id }) {
       stepsBlock(),
       r.notes && h('section', { class: 'card notes' }, h('h2', null, 'Notes'), h('p', { class: 'pre' }, r.notes)),
       sourceBlock(),
+      h('button', { class: 'btn primary', onclick: () => planSheet(r) }, icon('calendar', 20), 'Planifier un repas'),
       h('div', { class: 'row gap wrap' },
         h('button', { class: 'btn ghost grow', onclick: () => share(r, f) }, icon('share', 20), 'Partager'),
         h('a', { class: 'btn ghost grow', href: `#/recette/${id}/modifier` }, icon('edit', 20), 'Modifier')),

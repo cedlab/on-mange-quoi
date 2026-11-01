@@ -115,6 +115,40 @@ export function createFirebaseBackend() {
       else await deleteDoc(doc(db, 'recipePhotos', id));
     },
 
+    // --- Accès générique (planning, courses, réglages) -----------------------
+    // Chemins « collection/document » : « plans/2026-11-07 », « config/settings ».
+    watchCol(path, onChange, onError) {
+      return onSnapshot(collection(db, ...path.split('/')), (snap) => {
+        onChange(snap.docs.map((d) => ({ ...d.data(), id: d.id })));
+      }, onError);
+    },
+    watchDocAt(path, onChange, onError) {
+      return onSnapshot(doc(db, ...path.split('/')), (snap) => onChange(snap.exists() ? snap.data() : null), onError);
+    },
+    newDocId: (colPath) => doc(collection(db, ...colPath.split('/'))).id,
+    put(path, data, { merge = false } = {}) {
+      return setDoc(doc(db, ...path.split('/')), { ...data, ...stamp() }, { merge });
+    },
+    patch(path, data) {
+      return updateDoc(doc(db, ...path.split('/')), { ...data, ...stamp() });
+    },
+    del(path) {
+      return deleteDoc(doc(db, ...path.split('/')));
+    },
+    /** ops : [{ op: 'set' | 'update' | 'delete', path, data, merge }] */
+    async writeOps(ops) {
+      for (let i = 0; i < ops.length; i += BATCH_OPS) {
+        const batch = writeBatch(db);
+        for (const o of ops.slice(i, i + BATCH_OPS)) {
+          const ref = doc(db, ...o.path.split('/'));
+          if (o.op === 'delete') batch.delete(ref);
+          else if (o.op === 'update') batch.update(ref, { ...o.data, ...stamp() });
+          else batch.set(ref, { ...o.data, ...stamp() }, { merge: Boolean(o.merge) });
+        }
+        await batch.commit();
+      }
+    },
+
     /** Import en lots : items [{ recipe, photo }] ; onProgress(n écrits). */
     async importRecipes(items, onProgress) {
       let batch = writeBatch(db);

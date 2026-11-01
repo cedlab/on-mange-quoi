@@ -9,7 +9,9 @@ import { recipeView } from './ui/views/recipe.js';
 import { recipeFormView } from './ui/views/recipe-form.js';
 import { importView } from './ui/views/import.js';
 import { pasteView } from './ui/views/paste.js';
-import { comingSoonView, membersView, moreView, sortView, trashView } from './ui/views/more.js';
+import { comingSoonView, membersView, moreView, settingsView, sortView, trashView } from './ui/views/more.js';
+import { weekView } from './ui/views/week.js';
+import { shoppingView } from './ui/views/shopping.js';
 
 initTheme();
 registerServiceWorker();
@@ -24,8 +26,9 @@ route('/classer', sortView, { tab: 'more' });
 route('/plus', moreView, { tab: 'more', live: true });
 route('/membres', membersView, { tab: 'more' });
 route('/corbeille', trashView, { tab: 'more', live: true });
-route('/semaine', comingSoonView('Semaine', '📅', 'Le planning des repas (midi, soir et Poupette) et le menu à imprimer.', 2), { tab: 'week' });
-route('/courses', comingSoonView('Courses', '🛒', 'La liste de courses générée depuis le planning, rangée par rayon.', 2), { tab: 'shopping' });
+route('/semaine', weekView, { tab: 'week' });
+route('/courses', shoppingView, { tab: 'shopping' });
+route('/reglages', settingsView, { tab: 'more' });
 route('/placards', comingSoonView('Placards', '🧺', 'Ce que tu as à la maison, et des idées de recettes avec.', 3), { tab: 'pantry' });
 
 function isDemo() {

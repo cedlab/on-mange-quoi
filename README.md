@@ -7,7 +7,7 @@ C'est une application web installable (PWA) : elle s'ouvre en plein écran et fo
 
 ## Fonctionnalités
 
-**Disponible (étapes 0 et 1)**
+**Disponible (étapes 0, 1 et 2)**
 
 - **Connexion Google obligatoire.** Seuls les membres de la famille y ont accès (Plus → Membres de la famille).
 - **Recettes.** Chaque recette a :
@@ -28,11 +28,26 @@ C'est une application web installable (PWA) : elle s'ouvre en plein écran et fo
 - **Corbeille** : une recette supprimée par erreur se restaure.
 - **Temps réel.** Une modification faite sur un téléphone apparaît aussitôt sur les autres.
 
+- **Semaine** (étape 2) : planning du samedi au vendredi avec, pour chaque jour, Midi, Poupette, Soir et Poupette.
+  - Ajouter un repas : toucher un créneau, puis choisir une recette (recherche, recettes souvent au menu, mieux notées) ou un texte libre (« Restes », « Cantine »…), avec le nombre de portions.
+  - Poupette : bouton « Même chose que les grands ».
+  - Navigation : semaine par semaine, ou par le calendrier (toucher le titre de la semaine).
+  - Sélection : « Sélectionner » pour choisir des jours ; « Période » pour choisir du … au … sur le calendrier, puis faire les courses, le PDF ou vider ces jours.
+  - Depuis une fiche recette : « Planifier un repas ».
+- **Menu en PDF** : la grille « Planning des repas » (A4 paysage, une page par semaine, lignes Poupette grisées), pour cette semaine, deux semaines ou une période, ou vierge à remplir à la main. Le PDF se partage ou s'imprime depuis le téléphone.
+- **Courses** : liste générée à partir des repas d'une période.
+  - Quantités additionnées et ajustées aux portions prévues.
+  - Rangement par rayon ; un article reclassé à la main est mémorisé.
+  - Les produits de base (sel, huile…) sont regroupés à part.
+  - Cases à cocher en temps réel sur tous les téléphones, ajouts à la main (« 6 œufs »).
+  - « Mettre à jour » après un changement du planning conserve les coches.
+  - « Courses terminées » retire les articles cochés ; la liste se partage en texte.
+- **Réglages du planning** (Plus) : nombre de personnes par repas, portion de Poupette.
+
 **À venir**
 
 | Étape | Contenu |
 |---|---|
-| 2 | Planning de la semaine (samedi → vendredi : Midi, Poupette, Soir, Poupette), menu en PDF à imprimer, liste de courses par rayon |
 | 3 | Placards (« j'en ai / j'en ai plus »), déduction dans les courses, suggestions de recettes |
 | 4 | Lien de lecture seule pour partager une recette à quelqu'un qui n'a pas l'app, PDF ou image d'une recette |
 | 5 | Favori « bookmarklet » pour importer depuis un site, partage vers l'app sur Android, liens Chronodrive dans les courses |
@@ -125,7 +140,7 @@ src/
   main.js, app.js        routes, onglets, porte de connexion
   firebase.js            configuration du projet Firebase
   data/                  store.js (état, temps réel), firestore-backend.js, memory-backend.js
-  logic/                 logique pure et testée : quantities.js, recipes.js, sources.js, exchange.js, text-import.js
+  logic/                 logique pure et testée : quantities.js, recipes.js, sources.js, exchange.js, text-import.js, dates.js, plan.js, aisles.js, menu-pdf.js
   ui/                    dom.js, components.js, icons.js, image.js, views/
   sw.js, pwa.js          hors ligne et mises à jour
 firestore.rules          règles de sécurité (à publier dans la console)
@@ -138,3 +153,6 @@ firestore.rules          règles de sécurité (à publier dans la console)
 | `recipes/{id}` | la recette, avec une vignette `thumb` de quelques Ko |
 | `recipePhotos/{id}` | la photo, d'environ 100 Ko, chargée à l'ouverture de la fiche |
 | `config/access` | `{ members: [...] }`, la liste des adresses autorisées |
+| `plans/{samedi}` | une semaine : `{ days: { "2026-11-07": { midi: [...], midiP: [...], soir: [...], soirP: [...] } } }` |
+| `shoppingItems/{id}` | un article de la liste de courses (coché ou non) |
+| `config/settings`, `config/aisles`, `config/shopping` | réglages du planning, rayons choisis à la main, période de la liste |

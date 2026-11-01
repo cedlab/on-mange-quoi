@@ -20,6 +20,7 @@
     "node": ">=20.19"
   },
   "dependencies": {
-    "firebase": "^13.0.0"
+    "firebase": "^13.0.0",
+    "jspdf": "^4.2.1"
   }
 }

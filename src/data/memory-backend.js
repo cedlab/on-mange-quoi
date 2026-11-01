@@ -16,8 +16,68 @@ export function createMemoryBackend({ email = 'demo@exemple.fr', members = [emai
   };
   const stamp = () => ({ updatedAt: Date.now(), updatedBy: user?.email || null });
 
+  // Documents génériques : chemin « collection/id » → données.
+  const docs = new Map();
+  const colWatchers = new Map(); // chemin de collection → Set(callback)
+  const docWatchers = new Map(); // chemin de document → Set(callback)
+  const isObj = (v) => v && typeof v === 'object' && !Array.isArray(v);
+  const deepMerge = (a, b) => {
+    const out = { ...(a || {}) };
+    for (const [k, v] of Object.entries(b)) out[k] = isObj(v) && isObj(out[k]) ? deepMerge(out[k], v) : structuredClone(v);
+    return out;
+  };
+  const colOf = (path) => path.split('/').slice(0, -1).join('/');
+  const notify = (path) => {
+    const col = colOf(path);
+    for (const w of colWatchers.get(col) || []) {
+      const list = [...docs.entries()].filter(([p]) => colOf(p) === col).map(([p, d]) => ({ ...structuredClone(d), id: p.split('/').pop() }));
+      queueMicrotask(() => w(list));
+    }
+    for (const w of docWatchers.get(path) || []) {
+      const d = docs.get(path);
+      queueMicrotask(() => w(d ? structuredClone(d) : null));
+    }
+  };
+  const writeOne = (o) => {
+    if (o.op === 'delete') docs.delete(o.path);
+    else if (o.op === 'update') {
+      if (!docs.has(o.path)) throw new Error(`Document introuvable : ${o.path}`);
+      docs.set(o.path, { ...docs.get(o.path), ...structuredClone(o.data) });
+    } else docs.set(o.path, o.merge ? deepMerge(docs.get(o.path), o.data) : structuredClone(o.data));
+  };
+
   return {
     kind: 'memory',
+    watchCol(path, onChange) {
+      if (!colWatchers.has(path)) colWatchers.set(path, new Set());
+      colWatchers.get(path).add(onChange);
+      const list = [...docs.entries()].filter(([p]) => colOf(p) === path).map(([p, d]) => ({ ...structuredClone(d), id: p.split('/').pop() }));
+      queueMicrotask(() => onChange(list));
+      return () => colWatchers.get(path).delete(onChange);
+    },
+    watchDocAt(path, onChange) {
+      if (!docWatchers.has(path)) docWatchers.set(path, new Set());
+      docWatchers.get(path).add(onChange);
+      queueMicrotask(() => onChange(docs.has(path) ? structuredClone(docs.get(path)) : null));
+      return () => docWatchers.get(path).delete(onChange);
+    },
+    newDocId: (colPath) => `${colPath.replace(/\//g, '_')}_${++seq}`,
+    async put(path, data, { merge = false } = {}) {
+      writeOne({ op: 'set', path, data, merge });
+      notify(path);
+    },
+    async patch(path, data) {
+      writeOne({ op: 'update', path, data });
+      notify(path);
+    },
+    async del(path) {
+      writeOne({ op: 'delete', path });
+      notify(path);
+    },
+    async writeOps(ops) {
+      for (const o of ops) writeOne(o);
+      for (const p of new Set(ops.map((o) => o.path))) notify(p);
+    },
     onUser(cb) {
       userCb = cb;
       queueMicrotask(() => cb(user));
