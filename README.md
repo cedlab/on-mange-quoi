@@ -21,6 +21,7 @@ C'est une application web installable (PWA) : elle s'ouvre en plein écran et fo
 - **Mode cuisine.** On coche les étapes au fur et à mesure, et l'écran peut rester allumé (☀).
 - **Partage** d'une recette en texte (WhatsApp, SMS, mail…) : ingrédients aux portions affichées, étapes et lien vers la source.
 - **Coller une recette** (bouton + → « Coller un texte ») : on copie une recette depuis ses notes, un message ou une page web, et le titre, les portions, les temps, les ingrédients (avec quantités et sous-groupes), les étapes, les astuces et la source sont reconnus. Le formulaire s'ouvre pré-rempli, pour vérifier avant d'enregistrer.
+- **Recettes Cookidoo** : sur cookidoo.fr (Safari, connecté), copier la recette du titre à la dernière étape, puis la coller avec le lien de la recette sur une ligne à part. Les avis, la difficulté et les valeurs nutritionnelles sont ignorés, les quantités écrites sur une ligne à part sont recollées, la source devient « Cookidoo » (bouton « Ouvrir dans Cookidoo ») et le tag #thermomix est ajouté. Dans les étapes, les réglages Thermomix (« 10 sec/vitesse 6 ») sont mis en évidence.
 - **Import** d'un fichier de recettes JSON (Plus → Importer des recettes). Les doublons sont repérés.
 - **Sauvegarde** complète en JSON, photos comprises (Plus → Sauvegarder les recettes).
 - **Classement rapide** des recettes par catégorie, une par une (Plus → Classer les recettes).

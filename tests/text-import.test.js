@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseDuration, parseRecipeText, readMeta } from '../src/logic/text-import.js';
+import { parseDuration, parseRecipeText, readMeta, TM_SETTING } from '../src/logic/text-import.js';
 
 const names = (r) => r.ingredients.map((i) => i.name);
 const steps = (r) => r.steps.map((s) => s.section ? `# ${s.section}` : s.text);
@@ -100,7 +100,7 @@ Cuire 40 min à 180 °C.`);
 
   it('repère le lien et la source', () => {
     const r = parseRecipeText('Risotto\nhttps://cookidoo.fr/recipes/recipe/fr-FR/r123\n300 g de riz\nCuire.');
-    expect(r.source).toEqual({ type: 'cookidoo', url: 'https://cookidoo.fr/recipes/recipe/fr-FR/r123' });
+    expect(r.source).toEqual({ type: 'cookidoo', title: 'Cookidoo', url: 'https://cookidoo.fr/recipes/recipe/fr-FR/r123' });
     const r2 = parseRecipeText('Quiche\nSource : Nadine\n3 œufs');
     expect(r2.source).toEqual({ type: 'perso', title: 'Nadine' });
     expect(parseRecipeText('Quiche\nSource : Le grand livre de la cuisine française').source.type).toBe('autre');
@@ -121,5 +121,85 @@ Préparation
 
   it('texte vide', () => {
     expect(parseRecipeText('')).toMatchObject({ title: 'Recette sans titre', ingredients: [], steps: [] });
+  });
+});
+
+describe('Cookidoo', () => {
+  const PAGE = `Quiche lorraine
+4.6 (2345 avis)
+Facile
+Temps de préparation 20 min
+Temps total 1h 10min
+Portions 6 portions
+Ingrédients
+Pâte brisée
+200 g
+farine de blé
+100 g
+beurre, coupé en morceaux
+1 pincée de sel
+50 g d'eau
+Garniture
+200 g de lardons fumés
+3
+œufs
+200 g crème fraîche épaisse
+Accessoires nécessaires
+Moule à tarte
+Préparation
+1
+Préchauffer le four à 200 °C.
+2
+Mettre la farine, le beurre et le sel dans le bol et mixer 10 sec/vitesse 6.
+3
+Ajouter les œufs et la crème, mélanger 20 sec/vitesse 4.
+4
+Faire revenir les lardons 3 min/100°C/Ⓡ/vitesse Ⓢ.
+Nutrition
+par 1 portion
+Calories
+2134 kJ / 512 kcal
+Protéines
+14 g
+https://cookidoo.fr/recipes/recipe/fr-FR/r130599`;
+
+  it('reconnaît une page Cookidoo copiée', () => {
+    const r = parseRecipeText(PAGE);
+    expect(r.title).toBe('Quiche lorraine');
+    expect(r).toMatchObject({ servings: 6, prepMin: 20 });
+    expect(r.ingredients.map((i) => [i.group, i.qty, i.unit, i.name])).toEqual([
+      ['Pâte brisée', 200, 'g', 'farine de blé'],
+      ['Pâte brisée', 100, 'g', 'beurre'],
+      ['Pâte brisée', 1, 'pincée', 'sel'],
+      ['Pâte brisée', 50, 'g', 'eau'],
+      ['Garniture', 200, 'g', 'lardons fumés'],
+      ['Garniture', 3, undefined, 'œufs'],
+      ['Garniture', 200, 'g', 'crème fraîche épaisse'],
+    ]);
+    expect(r.ingredients[1].note).toBe('coupé en morceaux');
+    expect(r.steps.map((x) => x.text)).toEqual([
+      'Préchauffer le four à 200 °C.',
+      'Mettre la farine, le beurre et le sel dans le bol et mixer 10 sec/vitesse 6.',
+      'Ajouter les œufs et la crème, mélanger 20 sec/vitesse 4.',
+      'Faire revenir les lardons 3 min/100°C/Ⓡ/vitesse Ⓢ.',
+    ]);
+    expect(r.notes).toBe('Accessoires : Moule à tarte');
+    expect(r.source).toEqual({ type: 'cookidoo', title: 'Cookidoo', url: 'https://cookidoo.fr/recipes/recipe/fr-FR/r130599' });
+    expect(r.tags).toEqual(['thermomix']);
+  });
+
+  it('ne prend pas un ingrédient sans quantité pour un sous-titre', () => {
+    const r = parseRecipeText('Pâtes\nIngrédients\n400 g de pâtes\ncrème fraîche\nparmesan\nGarniture\nbasilic');
+    expect(r.ingredients.map((i) => [i.group, i.name])).toEqual([
+      [undefined, 'pâtes'], [undefined, 'crème fraîche'], [undefined, 'parmesan'], ['Garniture', 'basilic'],
+    ]);
+  });
+
+  it('repère les réglages Thermomix', () => {
+    const find = (t) => t.match(new RegExp(TM_SETTING.source, 'gi'));
+    expect(find('mixer 10 sec/vitesse 6 puis 3 min/100°C/vitesse 1')).toEqual(['10 sec/vitesse 6', '3 min/100°C/vitesse 1']);
+    expect(find('cuire 20 min/Varoma/Ⓡ/vitesse Ⓢ')).toEqual(['20 min/Varoma/Ⓡ/vitesse Ⓢ']);
+    expect(find('pétrir 2 min/mode pétrin')).toEqual(['mode pétrin']);
+    expect(find('Mélanger à la main.')).toBe(null);
   });
 });
