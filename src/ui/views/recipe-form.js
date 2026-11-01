@@ -26,13 +26,21 @@ function field(label, input, hint) {
   return h('label', { class: 'field' }, h('span', { class: 'field-label' }, label), input, hint && h('small', { class: 'muted' }, hint));
 }
 
-export function recipeFormView({ id } = {}) {
+/** Brouillon venu de « Coller une recette », repris par le formulaire. */
+let pendingDraft = null;
+export function setDraft(draft) {
+  pendingDraft = draft;
+}
+
+export function recipeFormView({ id } = {}, query = {}) {
   const existing = id ? store.recipe(id) : null;
   if (id && !existing) {
     return h('div', { class: 'page' }, header('Modifier', { back: '#/' }),
       store.loaded ? emptyState('🤷', 'Recette introuvable') : h('div', { class: 'spinner' }));
   }
-  const r = existing ? structuredClone(existing) : { source: { type: 'perso', title: '' }, ingredients: [], steps: [], tags: [], rating: 0 };
+  const blank = { source: { type: 'perso', title: '' }, ingredients: [], steps: [], tags: [], rating: 0 };
+  const fromDraft = !id && query.brouillon && pendingDraft;
+  const r = existing ? structuredClone(existing) : fromDraft ? { ...blank, ...structuredClone(pendingDraft) } : blank;
   let photo; // undefined : inchangée ; null : retirée ; { photo, thumb } : nouvelle
   let category = r.category || null;
   const src = { ...r.source };
@@ -150,6 +158,7 @@ export function recipeFormView({ id } = {}) {
       if (photo) photoCache.set(newId, photo.photo);
       else if (photo === null) photoCache.delete(newId);
       toast(id ? 'Recette enregistrée.' : 'Recette ajoutée.');
+      if (fromDraft) pendingDraft = null;
       if (id) back(`/recette/${id}`);
       else navigate(`/recette/${newId}`, { replace: true });
     } catch (err) {
@@ -161,6 +170,9 @@ export function recipeFormView({ id } = {}) {
   return h('div', { class: 'page' },
     header(id ? 'Modifier la recette' : 'Nouvelle recette', { back: id ? `#/recette/${id}` : '#/' }),
     h('form', { class: 'stack form', onsubmit: submit },
+      fromDraft && h('div', { class: 'card notice' },
+        h('strong', null, '✨ Recette détectée'),
+        h('p', { class: 'small' }, `${r.ingredients.length} ingrédient${r.ingredients.length > 1 ? 's' : ''} et ${r.steps.filter((x) => x.text).length} étape${r.steps.length > 1 ? 's' : ''} reconnus. Vérifie, complète (source, catégorie, photo…) puis enregistre.`)),
       photoBox,
       field('Titre *', title),
       h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Catégorie'), catBox),

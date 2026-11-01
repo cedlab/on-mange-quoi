@@ -8,13 +8,15 @@ import { recipesView } from './ui/views/recipes.js';
 import { recipeView } from './ui/views/recipe.js';
 import { recipeFormView } from './ui/views/recipe-form.js';
 import { importView } from './ui/views/import.js';
+import { pasteView } from './ui/views/paste.js';
 import { comingSoonView, membersView, moreView, sortView, trashView } from './ui/views/more.js';
 
 initTheme();
 registerServiceWorker();
 
 route('/', recipesView, { tab: 'recipes' });
-route('/recette/nouvelle', () => recipeFormView({}), { tab: 'recipes' });
+route('/recette/nouvelle', (_, query) => recipeFormView({}, query), { tab: 'recipes' });
+route('/recette/coller', pasteView, { tab: 'recipes' });
 route('/recette/:id/modifier', recipeFormView, { tab: 'recipes' });
 route('/recette/:id', recipeView, { tab: 'recipes', live: true });
 route('/importer', importView, { tab: 'more' });

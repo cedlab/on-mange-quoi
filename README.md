@@ -20,6 +20,7 @@ C'est une application web installable (PWA) : elle s'ouvre en plein écran et fo
 - **Recherche et filtres.** La recherche ignore les accents et porte sur le titre, les ingrédients, la source et les tags. Les filtres portent sur la catégorie, la note, le temps total, le type de source et les tags. On peut aussi trier.
 - **Mode cuisine.** On coche les étapes au fur et à mesure, et l'écran peut rester allumé (☀).
 - **Partage** d'une recette en texte (WhatsApp, SMS, mail…) : ingrédients aux portions affichées, étapes et lien vers la source.
+- **Coller une recette** (bouton + → « Coller un texte ») : on copie une recette depuis ses notes, un message ou une page web, et le titre, les portions, les temps, les ingrédients (avec quantités et sous-groupes), les étapes, les astuces et la source sont reconnus. Le formulaire s'ouvre pré-rempli, pour vérifier avant d'enregistrer.
 - **Import** d'un fichier de recettes JSON (Plus → Importer des recettes). Les doublons sont repérés.
 - **Sauvegarde** complète en JSON, photos comprises (Plus → Sauvegarder les recettes).
 - **Classement rapide** des recettes par catégorie, une par une (Plus → Classer les recettes).
@@ -33,7 +34,7 @@ C'est une application web installable (PWA) : elle s'ouvre en plein écran et fo
 | 2 | Planning de la semaine (samedi → vendredi : Midi, Poupette, Soir, Poupette), menu en PDF à imprimer, liste de courses par rayon |
 | 3 | Placards (« j'en ai / j'en ai plus »), déduction dans les courses, suggestions de recettes |
 | 4 | Lien de lecture seule pour partager une recette à quelqu'un qui n'a pas l'app, PDF ou image d'une recette |
-| 5 | Import par copier-coller du texte d'une recette, favori « bookmarklet », partage vers l'app sur Android, liens Chronodrive dans les courses |
+| 5 | Favori « bookmarklet » pour importer depuis un site, partage vers l'app sur Android, liens Chronodrive dans les courses |
 
 ## Confidentialité
 
@@ -123,7 +124,7 @@ src/
   main.js, app.js        routes, onglets, porte de connexion
   firebase.js            configuration du projet Firebase
   data/                  store.js (état, temps réel), firestore-backend.js, memory-backend.js
-  logic/                 logique pure et testée : quantities.js, recipes.js, sources.js, exchange.js
+  logic/                 logique pure et testée : quantities.js, recipes.js, sources.js, exchange.js, text-import.js
   ui/                    dom.js, components.js, icons.js, image.js, views/
   sw.js, pwa.js          hors ligne et mises à jour
 firestore.rules          règles de sécurité (à publier dans la console)

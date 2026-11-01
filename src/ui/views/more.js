@@ -85,6 +85,7 @@ export function moreView() {
       }, icon('logout'))),
     h('div', { class: 'menu' },
       item('#/membres', 'users', 'Membres de la famille', 'Qui peut utiliser l’app'),
+      item('#/recette/coller', 'edit', 'Coller une recette', 'Depuis tes notes, un message, une page web'),
       item('#/importer', 'upload', 'Importer des recettes', 'Fichier JSON'),
       backupBtn,
       item('#/classer', 'layers', 'Classer les recettes', uncategorized ? `${plural(uncategorized, 'recette', 'recettes')} sans catégorie` : 'Toutes ont une catégorie'),
