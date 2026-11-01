@@ -44,15 +44,19 @@ jobs:
           curl -fsSL "$src/auth/experiments.js" -o "$out/auth/experiments.js"
           curl -fsSL "$src/auth/iframe" -o "$out/auth/iframe.html"
           curl -fsSL "$src/auth/iframe.js" -o "$out/auth/iframe.js"
-          curl -fsSL "$src/firebase/init.json" -o "$out/firebase/init.json"
+          # init.json n'existe que si Firebase Hosting est activé : on le crée
+          # à partir de la configuration publique de l'app (src/firebase.js).
+          cat > "$out/firebase/init.json" <<'JSON'
+          {"apiKey":"AIzaSyCTVvjV0ydGvE0xQQnv8dUTpP4hEVThulA","appId":"1:130739216169:web:742d8fac4fc6b3d2246138","authDomain":"cedlab.github.io/on-mange-quoi","messagingSenderId":"130739216169","projectId":"on-mange-quoi-a0c23","storageBucket":"on-mange-quoi-a0c23.firebasestorage.app"}
+          JSON
           # L'app est dans /on-mange-quoi/ : tous les chemins absolus « /__/ »
           # (scripts, adresse de retour, init.json) sont déplacés sous ce préfixe.
-          sed -i -E 's#(["'"'"'])/__/#\1/on-mange-quoi/__/#g' "$out"/auth/*
+          sed -i -E 's#(["'"'"'=])/__/#\1/on-mange-quoi/__/#g' "$out"/auth/*
           echo "--- handler.html"; cat "$out/auth/handler.html"
           echo "--- iframe.html"; cat "$out/auth/iframe.html"
           echo "--- chemins absolus dans les scripts :"
           grep -oE '["'"'"'][^"'"'"']*/__/[^"'"'"']*["'"'"']' "$out"/auth/*.js | sort | uniq -c || true
-          if grep -qE '["'"'"']/__/' "$out"/auth/*; then echo "Chemin /__/ non corrigé" >&2; exit 1; fi
+          if grep -qE '["'"'"'=]/__/' "$out"/auth/*; then echo "Chemin /__/ non corrigé" >&2; exit 1; fi
           ls -la "$out/auth" "$out/firebase"
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
