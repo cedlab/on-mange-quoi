@@ -68,7 +68,7 @@ function stepText(text) {
 }
 
 /** « Planifier » : choisir le jour, le repas et les portions. */
-function planSheet(r) {
+export function planSheet(r) {
   const today = todayISO();
   let date = today;
   let slotId = 'soir';

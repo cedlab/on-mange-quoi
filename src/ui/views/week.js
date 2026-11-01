@@ -5,6 +5,7 @@ import {
 } from '../../logic/dates.js';
 import { entryLabel, plannedDays, QUICK_TEXTS, SLOTS, slotEntries } from '../../logic/plan.js';
 import { filterRecipes, normalizeText } from '../../logic/recipes.js';
+import { suggest } from '../../logic/suggest.js';
 import { openCalendar } from '../calendar.js';
 import { confirmDialog, header, sheet, toast } from '../components.js';
 import { h, plural, setChildren } from '../dom.js';
@@ -111,6 +112,30 @@ export function openSlot(date, slotId) {
   const addRecipe = (r) => save([...entries, { recipeId: r.id, title: r.title, servings: defaultServings(slotId) }]);
   const addText = (text) => text && save([...entries, { text }]);
 
+  // Idée au hasard (de saison, pas mangée récemment) adaptée au créneau.
+  const ideaSeen = [];
+  let idea = null;
+  const nextIdea = () => {
+    const cat = slot.child ? 'bebe' : 'plat';
+    const enough = store.activeRecipes.filter((r) => r.category === cat).length >= 3;
+    const opts = { plans: store.plans, today: todayISO(), count: 1, exclude: [...ideaSeen, ...entries.map((e) => e.recipeId)] };
+    [idea] = suggest(store.recipes, { ...opts, filters: enough ? { categories: [cat] } : {} });
+    if (!idea && ideaSeen.length) {
+      ideaSeen.length = 0;
+      [idea] = suggest(store.recipes, { ...opts, exclude: [], filters: enough ? { categories: [cat] } : {} });
+    }
+    if (idea) ideaSeen.push(idea.recipe.id);
+  };
+  const ideaRow = () => idea && h('div', { class: 'idea-row' },
+    recipeThumb(idea.recipe, 44),
+    h('div', { class: 'grow' },
+      h('small', null, '🎲 Une idée'),
+      h('strong', null, idea.recipe.title),
+      idea.reasons[0] && h('small', { class: 'muted' }, idea.reasons[0])),
+    h('button', { class: 'btn small primary', onclick: () => { const r = idea.recipe; nextIdea(); addRecipe(r); } }, 'Ajouter'),
+    h('button', { class: 'icon-btn small', 'aria-label': 'Une autre idée', onclick: () => { nextIdea(); draw(); } }, icon('shuffle', 18)));
+  nextIdea();
+
   const search = h('input', {
     class: 'input', type: 'search', placeholder: 'Chercher une recette…', autocomplete: 'off', enterkeyhint: 'search',
     oninput: () => { query = search.value; drawResults(); },
@@ -165,6 +190,7 @@ export function openSlot(date, slotId) {
       slot.child && family.length > 0 && h('button', {
         class: 'btn ghost', onclick: () => save([...entries, ...family.map((e) => ({ ...e, servings: store.settings.childServings }))]),
       }, '👧 Même chose que les grands'),
+      ideaRow(),
       h('div', { class: 'chips' }, QUICK_TEXTS.map((t) => h('button', { class: 'chip-select', onclick: () => addText(t) }, t))),
       search,
       results);

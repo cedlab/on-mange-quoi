@@ -57,3 +57,11 @@ export function setChildren(el, ...children) {
   append(el, children);
   return el;
 }
+
+export function vibrate(pattern) {
+  try {
+    navigator.vibrate?.(pattern);
+  } catch {
+    /* non disponible (iOS) */
+  }
+}

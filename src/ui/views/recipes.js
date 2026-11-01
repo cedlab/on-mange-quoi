@@ -193,6 +193,7 @@ export function recipesView() {
 
   const el = h('div', { class: 'page' },
     header('Recettes', {
+      lead: h('a', { class: 'icon-btn dice-btn', href: '#/idee', 'aria-label': 'On mange quoi ? Une idée au hasard' }, icon('dice')),
       actions: [h('button', { class: 'icon-btn', 'aria-label': 'Ajouter une recette', onclick: newRecipeMenu }, icon('plus'))],
     }),
     h('div', { class: 'search-bar' }, h('div', { class: 'search-wrap' }, icon('search', 18), search), filterBtn),
