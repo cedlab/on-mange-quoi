@@ -45,6 +45,23 @@ self.addEventListener('fetch', (event) => {
   // interceptées ni mises en cache, elles doivent toujours venir du réseau.
   if (url.pathname.includes('/__/')) return;
 
+  // Le manifeste (nom, icônes, partage Android…) est toujours lu à jour : sinon
+  // Chrome installerait l'app avec la version du manifeste gardée en cache.
+  if (url.pathname.endsWith('/manifest.webmanifest')) {
+    event.respondWith(
+      (async () => {
+        try {
+          const res = await fetch(req, { cache: 'no-cache' });
+          if (res.ok) (await caches.open(CACHE)).put(req, res.clone());
+          return res;
+        } catch {
+          return (await caches.open(CACHE)).match(req, { ignoreSearch: true });
+        }
+      })(),
+    );
+    return;
+  }
+
   if (req.mode === 'navigate') {
     // Application monopage : toute navigation renvoie index.html (en cache).
     event.respondWith(
