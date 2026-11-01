@@ -44,6 +44,18 @@ async function callProxy(proxy, params) {
   return data;
 }
 
+/** Photo d'une recette téléchargée par le relais → { photo, thumb }, ou null. */
+export async function fetchPhotoViaRelay(imageUrl) {
+  const proxy = store.settings.importProxy;
+  if (!proxy || !imageUrl) return null;
+  try {
+    const data = await callProxy(proxy, { image: imageUrl });
+    return data.imageData ? await processPhoto(data.imageData) : null;
+  } catch {
+    return null; // relais ancien (sans photos) ou photo introuvable : on continue sans
+  }
+}
+
 export function linkImportView(_, query = {}) {
   const proxy = store.settings.importProxy;
   const input = h('input', {

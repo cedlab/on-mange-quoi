@@ -194,6 +194,14 @@ function imageUrlOf(recipe, meta, baseUrl) {
   }
 }
 
+/** Télécharge une photo (pour l'import d'un fichier de recettes avec « imageUrl »). */
+export async function fetchImage(url, { fetchFn = fetch } = {}) {
+  const res = await fetchFn(url, { headers: { ...BROWSER_HEADERS, Accept: 'image/*' } });
+  const ct = res.headers.get('content-type') || '';
+  if (!res.ok || !/^image\/(jpeg|png|webp|gif|avif)/i.test(ct)) throw new Error('Photo introuvable');
+  return `data:${ct.split(';')[0]};base64,${toBase64(await readLimited(res, MAX_IMAGE))}`;
+}
+
 async function readLimited(res, max) {
   const len = Number(res.headers.get('content-length') || 0);
   if (len > max) throw new Error('Page trop volumineuse');
@@ -257,7 +265,16 @@ export default {
       return json({ error: `Connexion requise : ${e.message}` }, 401, origin);
     }
     const params = new URL(request.url).searchParams;
-    if (params.has('ping')) return json({ ok: true, version: 1 }, 200, origin);
+    if (params.has('ping')) return json({ ok: true, version: 2 }, 200, origin);
+    if (params.has('image')) {
+      const img = checkTarget(params.get('image'));
+      if (!img) return json({ error: 'Adresse invalide' }, 400, origin);
+      try {
+        return json({ ok: true, imageData: await fetchImage(img, { fetchFn }) }, 200, origin);
+      } catch (e) {
+        return json({ error: e.message }, 502, origin);
+      }
+    }
     const target = checkTarget(params.get('url'));
     if (!target) return json({ error: 'Adresse invalide' }, 400, origin);
     try {

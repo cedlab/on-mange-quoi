@@ -27,7 +27,8 @@ C'est une application web installable (PWA) : elle s'ouvre en plein écran et fo
   - Le relais lit la page et en extrait la recette au format standard schema.org quand le site le fournit, sinon son texte.
   - Il n'accepte que les membres connectés (jeton Firebase vérifié) et l'app (cedlab.github.io), et ne conserve rien.
   - Ne marche pas pour Cookidoo, qui demande une connexion : il reste le copier-coller.
-- **Import** d'un fichier de recettes JSON (Plus → Importer des recettes). Les doublons sont repérés.
+- **Recettes Cookidoo avec Claude dans Chrome** : voir [docs/import-cookidoo-claude-chrome.md](docs/import-cookidoo-claude-chrome.md). Claude lit les recettes dans ta session Cookidoo et prépare un texte JSON à coller dans Plus → Importer des recettes. Les photos sont récupérées par le relais.
+- **Import** d'un fichier de recettes JSON, ou d'un texte JSON collé (les ingrédients et étapes peuvent être de simples textes ; une photo peut être donnée par son adresse `imageUrl`, téléchargée par le relais) (Plus → Importer des recettes). Les doublons sont repérés.
 - **Sauvegarde** complète en JSON, photos comprises (Plus → Sauvegarder les recettes).
 - **Classement rapide** des recettes par catégorie, une par une (Plus → Classer les recettes).
 - **Corbeille** : une recette supprimée par erreur se restaure.

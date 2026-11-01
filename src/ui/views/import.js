@@ -5,18 +5,36 @@ import { header, toast } from '../components.js';
 import { h, plural, setChildren } from '../dom.js';
 import { icon } from '../icons.js';
 import { thumbFromDataUrl } from '../image.js';
+import { fetchPhotoViaRelay } from './link-import.js';
 
 export function importView() {
   const body = h('div', { class: 'stack' });
   const input = h('input', { type: 'file', accept: '.json,application/json', class: 'hidden', onchange: () => read() });
 
   function start() {
+    const area = h('textarea', { class: 'input', rows: 6, placeholder: 'Colle ici le texte JSON des recettes (par exemple celui préparé par Claude dans Chrome)…' });
     setChildren(body,
       h('div', { class: 'card stack' },
         h('p', null, 'Choisis un fichier de recettes ', h('strong', null, '.json'), ' (par exemple celui que Claude a préparé à partir de ton PDF).'),
-        h('p', { class: 'small muted' }, 'Le fichier reste sur ton appareil : seules les recettes sont envoyées dans la base privée de la famille. Les doublons (même titre et même source) sont repérés.'),
         h('button', { class: 'btn primary big', onclick: () => input.click() }, icon('upload', 20), 'Choisir le fichier'),
-        input));
+        input),
+      h('div', { class: 'card stack' },
+        h('p', null, 'Ou colle le texte des recettes :'),
+        area,
+        h('button', {
+          class: 'btn ghost', onclick: () => {
+            if (!area.value.trim()) {
+              toast('Colle d’abord le texte.');
+              return;
+            }
+            try {
+              preview('Texte collé', parseImport(area.value, store.recipes));
+            } catch (e) {
+              toast(e.message, { duration: 6000 });
+            }
+          },
+        }, 'Lire le texte')),
+      h('p', { class: 'small muted pad-x' }, 'Le fichier ou le texte reste sur ton appareil : seules les recettes sont envoyées dans la base privée de la famille. Les doublons (même titre et même source, ou même lien) sont repérés.'));
   }
 
   async function read() {
@@ -37,7 +55,8 @@ export function importView() {
   function preview(name, { items, errors }) {
     let skipDuplicates = true;
     const dups = items.filter((i) => i.duplicate).length;
-    const photos = items.filter((i) => i.photo).length;
+    const photos = items.filter((i) => i.photo || i.imageUrl).length;
+    const remote = items.filter((i) => !i.photo && i.imageUrl).length;
     const btn = h('button', { class: 'btn primary big' });
     const label = () => {
       const n = skipDuplicates ? items.length - dups : items.length;
@@ -51,7 +70,8 @@ export function importView() {
         h('h2', null, name),
         h('ul', { class: 'summary' },
           h('li', null, '📖 ', plural(items.length, 'recette lisible', 'recettes lisibles')),
-          h('li', null, '📷 ', plural(photos, 'photo', 'photos')),
+          h('li', null, '📷 ', plural(photos, 'photo', 'photos'),
+            remote > 0 && (store.settings.importProxy ? ' (téléchargées par le relais)' : ' — installe le relais (Plus → Import par lien) pour les récupérer')),
           dups > 0 && h('li', null, '♻️ ', plural(dups, 'doublon', 'doublons'), ' (déjà dans l’app ou en double dans le fichier)'),
           errors.length > 0 && h('li', null, '⚠️ ', plural(errors.length, 'recette ignorée', 'recettes ignorées'))),
         dups > 0 && h('label', { class: 'toggle' },
@@ -75,6 +95,13 @@ export function importView() {
     try {
       let i = 0;
       for (const item of list) {
+        if (!item.photo && item.imageUrl) {
+          const p = await fetchPhotoViaRelay(item.imageUrl);
+          if (p) {
+            item.photo = p.photo;
+            item.recipe = { ...item.recipe, thumb: p.thumb };
+          }
+        }
         if (item.photo && !item.recipe.thumb) {
           try {
             item.recipe = { ...item.recipe, thumb: await thumbFromDataUrl(item.photo) };
