@@ -87,6 +87,9 @@ export function createMemoryBackend({ email = 'demo@exemple.fr', members = [emai
       user = { uid: 'demo', email, name: 'Démo', photo: '' };
       userCb?.(user);
     },
+    async getIdToken() {
+      return user ? 'jeton-demo' : null;
+    },
     async signOut() {
       user = null;
       userCb?.(null);

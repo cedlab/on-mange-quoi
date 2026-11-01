@@ -36,6 +36,11 @@ export function pasteView() {
       toast('Colle d’abord le texte de la recette.');
       return;
     }
+    // Juste un lien : import par lien.
+    if (/^https?:\/\/\S+$/i.test(text)) {
+      navigate(`/recette/lien?url=${encodeURIComponent(text)}`);
+      return;
+    }
     const draft = parseRecipeText(text);
     if (!draft.source) draft.source = { type: 'perso', title: 'Moi' };
     setDraft(draft);
@@ -85,6 +90,9 @@ export function pasteView() {
 /** Choix proposés par le bouton « + » des recettes. */
 export function newRecipeMenu() {
   const s = sheet(h('div', { class: 'menu flat' },
+    h('button', { class: 'menu-item', onclick: () => { s.close(); navigate('/recette/lien'); } },
+      h('span', { class: 'menu-icon' }, icon('link', 20)),
+      h('span', { class: 'grow' }, 'Importer depuis un lien', h('small', null, 'Chronodrive, Marmiton, 750g…'))),
     h('button', { class: 'menu-item', onclick: () => { s.close(); navigate('/recette/coller'); } },
       h('span', { class: 'menu-icon' }, '✨'),
       h('span', { class: 'grow' }, 'Coller un texte', h('small', null, 'Depuis tes notes, un message, une page web'))),

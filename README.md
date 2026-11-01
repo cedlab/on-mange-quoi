@@ -22,6 +22,11 @@ C'est une application web installable (PWA) : elle s'ouvre en plein écran et fo
 - **Partage** d'une recette en texte (WhatsApp, SMS, mail…) : ingrédients aux portions affichées, étapes et lien vers la source.
 - **Coller une recette** (bouton + → « Coller un texte ») : on copie une recette depuis ses notes, un message ou une page web, et le titre, les portions, les temps, les ingrédients (avec quantités et sous-groupes), les étapes, les astuces et la source sont reconnus. Le formulaire s'ouvre pré-rempli, pour vérifier avant d'enregistrer.
 - **Recettes Cookidoo** : sur cookidoo.fr (Safari, connecté), copier la recette du titre à la dernière étape, puis la coller avec le lien de la recette sur une ligne à part. Les avis, la difficulté et les valeurs nutritionnelles sont ignorés, les quantités écrites sur une ligne à part sont recollées, la source devient « Cookidoo » (bouton « Ouvrir dans Cookidoo ») et le tag #thermomix est ajouté. Dans les étapes, les réglages Thermomix (« 10 sec/vitesse 6 ») sont mis en évidence.
+- **Importer depuis un lien** (bouton + → « Importer depuis un lien ») : on colle le lien de partage d'une recette (Chronodrive, Marmiton, 750g…). La recette arrive pré-remplie avec sa photo, ses ingrédients, ses étapes, ses portions et ses temps, pour vérification. Sur Android, l'app apparaît aussi dans le menu Partager.
+  - Ça passe par un petit **relais Cloudflare gratuit** (`worker/recipe-proxy.js`), à installer une fois : voir Plus → Import par lien.
+  - Le relais lit la page et en extrait la recette au format standard schema.org quand le site le fournit, sinon son texte.
+  - Il n'accepte que les membres connectés (jeton Firebase vérifié) et l'app (cedlab.github.io), et ne conserve rien.
+  - Ne marche pas pour Cookidoo, qui demande une connexion : il reste le copier-coller.
 - **Import** d'un fichier de recettes JSON (Plus → Importer des recettes). Les doublons sont repérés.
 - **Sauvegarde** complète en JSON, photos comprises (Plus → Sauvegarder les recettes).
 - **Classement rapide** des recettes par catégorie, une par une (Plus → Classer les recettes).
@@ -60,7 +65,7 @@ C'est une application web installable (PWA) : elle s'ouvre en plein écran et fo
 |---|---|
 | 3 | Placards (« j'en ai / j'en ai plus »), déduction dans les courses, suggestions de recettes |
 | 4 | Lien de lecture seule pour partager une recette à quelqu'un qui n'a pas l'app, PDF ou image d'une recette |
-| 5 | Favori « bookmarklet » pour importer depuis un site, partage vers l'app sur Android, liens Chronodrive dans les courses |
+| 5 | Liens Chronodrive dans la liste de courses |
 
 ## Confidentialité
 
@@ -154,6 +159,7 @@ src/
   ui/                    dom.js, components.js, icons.js, image.js, views/
   sw.js, pwa.js          hors ligne et mises à jour
 firestore.rules          règles de sécurité (à publier dans la console)
+worker/recipe-proxy.js   relais d'import par lien (à coller dans un Worker Cloudflare)
 ```
 
 ### Données Firestore

@@ -41,7 +41,8 @@ export function recipeFormView({ id } = {}, query = {}) {
   const blank = { source: { type: 'perso', title: '' }, ingredients: [], steps: [], tags: [], rating: 0 };
   const fromDraft = !id && query.brouillon && pendingDraft;
   const r = existing ? structuredClone(existing) : fromDraft ? { ...blank, ...structuredClone(pendingDraft) } : blank;
-  let photo; // undefined : inchangée ; null : retirée ; { photo, thumb } : nouvelle
+  // undefined : inchangée ; null : retirée ; { photo, thumb } : nouvelle (ou venue d'un import par lien)
+  let photo = fromDraft && pendingDraft._photo ? pendingDraft._photo : undefined;
   let category = r.category || null;
   const src = { ...r.source };
 
@@ -171,7 +172,8 @@ export function recipeFormView({ id } = {}, query = {}) {
     header(id ? 'Modifier la recette' : 'Nouvelle recette', { back: id ? `#/recette/${id}` : '#/' }),
     h('form', { class: 'stack form', onsubmit: submit },
       fromDraft && h('div', { class: 'card notice' },
-        h('strong', null, '✨ Recette détectée'),
+        h('strong', null, r.source?.url && !r.fromText ? `✨ Recette importée de ${r.source.title || 'la page'}` : '✨ Recette détectée'),
+        r.fromText && h('p', { class: 'small' }, 'Le site ne fournit pas la recette sous forme structurée : elle a été reconstituée à partir du texte de la page, vérifie-la bien.'),
         h('p', { class: 'small' }, `${r.ingredients.length} ingrédient${r.ingredients.length > 1 ? 's' : ''} et ${r.steps.filter((x) => x.text).length} étape${r.steps.length > 1 ? 's' : ''} reconnus. Vérifie, complète (source, catégorie, photo…) puis enregistre.`)),
       photoBox,
       field('Titre *', title),
