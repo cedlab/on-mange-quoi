@@ -13,13 +13,20 @@ import {
   collection, deleteDoc, doc, getDoc, initializeFirestore, onSnapshot, persistentLocalCache,
   persistentMultipleTabManager, setDoc, updateDoc, writeBatch,
 } from 'firebase/firestore';
-import { FIREBASE_CONFIG } from '../firebase.js';
+import { authDomain, FIREBASE_CONFIG } from '../firebase.js';
 
 const BATCH_OPS = 400; // limite Firestore : 500 écritures par lot
 const BATCH_BYTES = 4_000_000; // et 10 Mo par requête : on reste large
 
+function preferRedirect() {
+  const standalone = window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone === true;
+  const mobile = /iphone|ipad|ipod|android/i.test(navigator.userAgent)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  return standalone || mobile;
+}
+
 export function createFirebaseBackend() {
-  const app = initializeApp(FIREBASE_CONFIG);
+  const app = initializeApp({ ...FIREBASE_CONFIG, authDomain: authDomain() });
   const auth = getAuth(app);
   auth.languageCode = 'fr';
   const db = initializeFirestore(app, {
@@ -35,8 +42,11 @@ export function createFirebaseBackend() {
     kind: 'firebase',
 
     // --- Connexion -------------------------------------------------------------
-    onUser(cb) {
-      getRedirectResult(auth).catch((e) => console.warn('Retour de connexion', e));
+    onUser(cb, onError) {
+      getRedirectResult(auth).catch((e) => {
+        console.warn('Retour de connexion', e);
+        onError?.(e);
+      });
       return onAuthStateChanged(auth, (u) => {
         user = u ? { uid: u.uid, email: (u.email || '').toLowerCase(), name: u.displayName || '', photo: u.photoURL || '' } : null;
         cb(user);
@@ -45,10 +55,15 @@ export function createFirebaseBackend() {
     async signIn() {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
+      // Sur téléphone (et dans l'app installée), la redirection est la méthode
+      // fiable : les fenêtres surgissantes s'ouvrent dans un autre onglet.
+      if (preferRedirect()) {
+        await signInWithRedirect(auth, provider);
+        return;
+      }
       try {
         await signInWithPopup(auth, provider);
       } catch (e) {
-        // Fenêtre bloquée ou non disponible (certaines apps installées) : redirection.
         if (['auth/popup-blocked', 'auth/operation-not-supported-in-this-environment', 'auth/cancelled-popup-request'].includes(e.code)) {
           await signInWithRedirect(auth, provider);
           return;

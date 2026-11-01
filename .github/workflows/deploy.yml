@@ -28,6 +28,29 @@ jobs:
       - run: npm run build
         env:
           BASE_PATH: /on-mange-quoi/
+      # Connexion Google sur iPhone : les pages de connexion Firebase doivent être
+      # servies par le même domaine que l'app (sinon Safari/Chrome iOS perdent la
+      # connexion en cours). On les copie depuis Firebase dans dist/__/auth/
+      # (voir authDomain() dans src/firebase.js et la documentation Firebase,
+      # « Best practices for using signInWithRedirect », option 4).
+      - name: Pages de connexion Firebase sur le même domaine
+        run: |
+          set -euo pipefail
+          src=https://on-mange-quoi-a0c23.firebaseapp.com/__/auth
+          out=dist/__/auth
+          mkdir -p "$out"
+          curl -fsSL "$src/handler" -o "$out/handler.html"
+          curl -fsSL "$src/handler.js" -o "$out/handler.js"
+          curl -fsSL "$src/experiments.js" -o "$out/experiments.js"
+          curl -fsSL "$src/iframe" -o "$out/iframe.html"
+          curl -fsSL "$src/iframe.js" -o "$out/iframe.js"
+          # L'app est dans /on-mange-quoi/ : on corrige les chemins absolus des scripts.
+          sed -i -E 's#(src|href)="/__/#\1="/on-mange-quoi/__/#g' "$out/handler.html" "$out/iframe.html"
+          echo "--- handler.html"; cat "$out/handler.html"
+          echo "--- iframe.html"; cat "$out/iframe.html"
+          echo "--- chemins absolus restant dans les scripts :"
+          grep -o '"/__/[^"]*"' "$out"/*.js | sort | uniq -c || true
+          ls -la "$out"
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
