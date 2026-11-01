@@ -11,7 +11,7 @@ C'est une application web installable (PWA) : elle s'ouvre en plein écran et fo
 
 - **Connexion Google obligatoire.** Seuls les membres de la famille y ont accès (Plus → Membres de la famille).
 - **Recettes.** Chaque recette a :
-  - un titre, une photo, une catégorie et une note en étoiles ;
+  - un titre, une photo, une catégorie et une note en étoiles, demi-étoiles comprises (toucher la moitié gauche d'une étoile) ;
   - des temps de préparation, de cuisson et de repos ;
   - des portions ;
   - des ingrédients (quantité, unité, groupes « Pour la sauce : »), des étapes, des notes et des tags.

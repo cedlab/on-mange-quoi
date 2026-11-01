@@ -1,6 +1,8 @@
 // Liste des recettes : recherche, filtres, tri.
 import { store } from '../../app.js';
-import { allTags, CATEGORIES, category, filterRecipes, formatMinutes, totalMinutes } from '../../logic/recipes.js';
+import {
+  allTags, CATEGORIES, category, filterRecipes, formatMinutes, formatRating, starFills, totalMinutes,
+} from '../../logic/recipes.js';
 import { SOURCE_TYPES } from '../../logic/sources.js';
 import { emptyState, header, segmented, sheet } from '../components.js';
 import { h, plural, setChildren } from '../dom.js';
@@ -33,9 +35,12 @@ export function recipeThumb(r, size = 64) {
   return h('div', { class: 'thumb thumb-empty', style: { ...style, fontSize: `${Math.round(size * 0.45)}px` }, 'aria-hidden': 'true' }, c?.emoji || '🍽️');
 }
 
-export function stars(n, size = 14) {
-  if (!n) return null;
-  return h('span', { class: 'stars-mini', 'aria-label': `${n} sur 5`, style: { fontSize: `${size}px` } }, '★'.repeat(n));
+/** Étoiles en lecture seule (demi-étoiles comprises). */
+export function stars(rating, size = 14) {
+  if (!rating) return null;
+  return h('span', { class: 'stars-view', style: { fontSize: `${size}px` }, role: 'img', 'aria-label': `${formatRating(rating)} sur 5` },
+    starFills(rating).map((f) => h('span', { class: 'star-cell' }, '★',
+      h('span', { class: 'star-fill', style: { width: `${f * 100}%` } }, '★'))));
 }
 
 function card(r) {
@@ -74,7 +79,7 @@ function filtersSheet(onChange) {
           { value: 'time', label: 'Durée' }, { value: 'recent', label: 'Récentes' },
         ], criteria.sort || 'az', (v) => { criteria.sort = v; changed(); })),
       h('div', { class: 'field' }, h('label', null, 'Note minimale'),
-        h('div', { class: 'chips' }, [0, 3, 4, 5].map((n) => chip(n ? `${'★'.repeat(n)}${n < 5 ? ' et +' : ''}` : 'Toutes',
+        h('div', { class: 'chips' }, [0, 3, 3.5, 4, 4.5, 5].map((n) => chip(n ? `${formatRating(n)} ★${n < 5 ? ' et +' : ''}` : 'Toutes',
           (criteria.minRating || 0) === n, () => { criteria.minRating = n || undefined; changed(); })))),
       h('div', { class: 'field' }, h('label', null, 'Temps total maximum'),
         h('div', { class: 'chips' }, [0, 20, 30, 45, 60, 120].map((n) => chip(n ? formatMinutes(n) : 'Peu importe',

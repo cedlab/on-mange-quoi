@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { allTags, cleanRecipe, filterRecipes, formatMinutes, normalizeText, validateRecipe } from '../src/logic/recipes.js';
+import {
+  allTags, cleanRecipe, filterRecipes, formatMinutes, formatRating, normalizeRating, normalizeText, starFills, validateRecipe,
+} from '../src/logic/recipes.js';
 import { cleanSource, detectSourceType, normalizeUrl, openLabel, sourceLabel, validateSource } from '../src/logic/sources.js';
 
 const R = (title, extra = {}) => ({ id: title, title, source: { type: 'perso', title: 'Moi' }, ingredients: [], steps: [], tags: [], ...extra });
@@ -70,5 +72,26 @@ describe('recettes', () => {
     expect(formatMinutes(90)).toBe('1 h 30');
     expect(formatMinutes(120)).toBe('2 h');
     expect(normalizeText("L’Œuf")).toBe("l'oeuf");
+  });
+});
+
+describe('demi-étoiles', () => {
+  it('arrondit au demi-point et borne entre 0 et 5', () => {
+    expect(normalizeRating(3.5)).toBe(3.5);
+    expect(normalizeRating(3.3)).toBe(3.5);
+    expect(normalizeRating(3.2)).toBe(3);
+    expect(normalizeRating(9)).toBe(5);
+    expect(normalizeRating(-1)).toBe(0);
+    expect(normalizeRating('x')).toBe(0);
+    expect(cleanRecipe({ title: 'a', rating: 4.5, source: { type: 'perso', title: 'Moi' } }).rating).toBe(4.5);
+  });
+  it('remplit les étoiles et affiche la note', () => {
+    expect(starFills(3.5)).toEqual([1, 1, 1, 0.5, 0]);
+    expect(starFills(0)).toEqual([0, 0, 0, 0, 0]);
+    expect(formatRating(4.5)).toBe('4,5');
+  });
+  it('filtre avec une note minimale décimale', () => {
+    const list = [{ id: 'a', title: 'A', rating: 3.5 }, { id: 'b', title: 'B', rating: 3 }];
+    expect(filterRecipes(list, { minRating: 3.5 }).map((r) => r.id)).toEqual(['a']);
   });
 });
