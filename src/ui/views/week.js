@@ -13,6 +13,15 @@ import { icon } from '../icons.js';
 import { recipeThumb } from './recipes.js';
 
 let currentWeek = null;
+const VIEW_KEY = 'omq.weekView';
+function loadView() {
+  try {
+    return localStorage.getItem(VIEW_KEY) || 'compact';
+  } catch {
+    return 'compact';
+  }
+}
+let viewMode = loadView();
 let selecting = false;
 const selected = new Set();
 
@@ -136,6 +145,20 @@ export function openSlot(date, slotId) {
     h('button', { class: 'icon-btn small', 'aria-label': 'Une autre idée', onclick: () => { nextIdea(); draw(); } }, icon('shuffle', 18)));
   nextIdea();
 
+  // Texte libre : « Raclette chez Paul », « Pâtes au beurre »…
+  const freeInput = h('input', { class: 'input grow', placeholder: 'Ex. Raclette chez Paul, pâtes au beurre…', autocomplete: 'off', enterkeyhint: 'done' });
+  const freeForm = h('form', {
+    class: 'free-text stack tight', onsubmit: (e) => {
+      e.preventDefault();
+      const t = freeInput.value.trim();
+      if (!t) return;
+      freeInput.value = '';
+      addText(t);
+    },
+  },
+  h('span', { class: 'field-label' }, '✏️ Texte libre'),
+  h('div', { class: 'row gap' }, freeInput, h('button', { class: 'btn primary', type: 'submit' }, 'Ajouter')));
+
   const search = h('input', {
     class: 'input', type: 'search', placeholder: 'Chercher une recette…', autocomplete: 'off', enterkeyhint: 'search',
     oninput: () => { query = search.value; drawResults(); },
@@ -190,8 +213,10 @@ export function openSlot(date, slotId) {
       slot.child && family.length > 0 && h('button', {
         class: 'btn ghost', onclick: () => save([...entries, ...family.map((e) => ({ ...e, servings: store.settings.childServings }))]),
       }, '👧 Même chose que les grands'),
-      ideaRow(),
+      freeForm,
       h('div', { class: 'chips' }, QUICK_TEXTS.map((t) => h('button', { class: 'chip-select', onclick: () => addText(t) }, t))),
+      ideaRow(),
+      h('span', { class: 'field-label' }, '📖 Une recette'),
       search,
       results);
     drawResults();
@@ -266,9 +291,52 @@ export function weekView(_, query = {}) {
     return card;
   }
 
+  const toggleSel = (date) => {
+    if (selected.has(date)) selected.delete(date);
+    else selected.add(date);
+    draw();
+  };
+
+  /** Choix du repas à remplir pour un jour (vue compacte). */
+  function addChooser(date) {
+    const s = sheet(h('div', { class: 'menu flat' }, SLOTS.map((slot) => {
+      const entries = slotEntries(store.plans, date, slot.id);
+      return h('button', { class: 'menu-item', onclick: () => { s.close(); openSlot(date, slot.id); } },
+        h('span', { class: 'menu-icon' }, slot.child ? '👧' : slot.id === 'midi' ? '☀️' : '🌙'),
+        h('span', { class: 'grow' }, slot.child ? `Poupette ${slot.id === 'midiP' ? 'midi' : 'soir'}` : slot.label,
+          h('small', null, entries.length ? entries.map((e) => entryLabel(e, store.byId)).join(' · ') : 'Rien de prévu')),
+        icon('back', 18));
+    })), { title: `${dayName(date)} ${dayNumber(date)}` });
+  }
+
+  /** Vue compacte : la date dans un rond, seuls les repas prévus sont affichés. */
+  function compactDay(date) {
+    const isSel = selected.has(date);
+    const filled = SLOTS.map((slot) => ({ slot, entries: slotEntries(store.plans, date, slot.id) })).filter((x) => x.entries.length);
+    return h('section', { class: `cday ${date === today ? 'today' : ''} ${date < today ? 'past' : ''} ${isSel ? 'selected' : ''}`, id: `jour-${date}` },
+      h('button', {
+        class: 'cday-date', 'aria-label': `${dayName(date)} ${dayNumber(date)}`,
+        onclick: () => (selecting ? toggleSel(date) : addChooser(date)),
+      },
+      selecting && isSel ? icon('check', 18) : h('strong', null, String(dayNumber(date))),
+      h('small', null, `${dayName(date).slice(0, 3).toLowerCase()}.`)),
+      h('div', { class: 'cday-card' },
+        filled.length
+          ? filled.map(({ slot, entries }) => h('button', { class: `cday-line ${slot.child ? 'child' : ''}`, onclick: () => (selecting ? toggleSel(date) : openSlot(date, slot.id)) },
+            h('span', { class: 'cday-label' }, slot.child ? `👧 ${slot.id === 'midiP' ? 'Midi' : 'Soir'}` : slot.label),
+            h('span', { class: 'cday-meals' }, entries.map((e) => {
+              const r = e.recipeId ? store.recipe(e.recipeId) : null;
+              return h('span', { class: `cday-meal ${e.text ? 'free' : ''}` },
+                r?.thumb && h('img', { src: r.thumb, alt: '' }), entryLabel(e, store.byId));
+            }))))
+          : h('button', { class: 'cday-empty', onclick: () => (selecting ? toggleSel(date) : addChooser(date)) }, 'Rien de prévu'),
+        !selecting && h('button', { class: 'cday-add', 'aria-label': `Ajouter un repas le ${dayName(date).toLowerCase()} ${dayNumber(date)}`, onclick: () => addChooser(date) }, icon('plus', 18))));
+  }
+
   function draw() {
     const days = weekDays(currentWeek);
     const end = days[6];
+    const compact = viewMode === 'compact';
     const planned = plannedDays(store.plans);
     setChildren(content,
       h('div', { class: 'week-nav' },
@@ -278,10 +346,10 @@ export function weekView(_, query = {}) {
             title: 'Aller à…', from: currentWeek, planned,
             actions: [{ label: 'Voir cette semaine', primary: true, onPick: (a) => go(weekStart(a)) }],
           }),
-        }, h('strong', null, `Semaine ${formatRange(currentWeek, end).replace(/ \d{4}$/, '')}`), h('small', null, 'Toucher pour le calendrier')),
+        }, h('strong', null, `${formatShort(currentWeek).replace(/^\S+ /, '')} → ${formatShort(end).replace(/^\S+ /, '')}`), h('small', null, 'Semaine · toucher pour le calendrier')),
         h('button', { class: 'icon-btn flip', 'aria-label': 'Semaine suivante', onclick: () => go(addDays(currentWeek, 7)) }, icon('back', 20))),
       currentWeek !== weekStart(today) && h('button', { class: 'link-btn', onclick: () => go(weekStart(today)) }, '↩︎ Revenir à cette semaine'),
-      h('div', { class: 'day-strip' }, days.map((d) => h('button', {
+      !compact && h('div', { class: 'day-strip' }, days.map((d) => h('button', {
         class: `day-pill ${d === today ? 'today' : ''} ${planned.has(d) ? 'planned' : ''} ${selected.has(d) ? 'selected' : ''}`,
         onclick: () => {
           if (selecting) {
@@ -305,15 +373,29 @@ export function weekView(_, query = {}) {
             ],
           }),
         }, icon('calendar', 18), 'Période')),
-      days.map(dayCard));
+      compact ? h('div', { class: 'cweek' }, days.map(compactDay)) : days.map(dayCard));
     drawSelection();
+    viewBtn.setAttribute('aria-label', compact ? 'Vue détaillée' : 'Vue compacte');
+    viewBtn.title = compact ? 'Vue détaillée' : 'Vue compacte';
   }
 
+  const viewBtn = h('button', {
+    class: 'icon-btn', onclick: () => {
+      viewMode = viewMode === 'compact' ? 'detail' : 'compact';
+      try {
+        localStorage.setItem(VIEW_KEY, viewMode);
+      } catch {
+        /* ignoré */
+      }
+      draw();
+    },
+  }, icon('layers'));
   const unsub = store.subscribe((k) => (k === 'plans' || k === 'recipes') && draw());
   draw();
   return {
     el: h('div', { class: 'page' },
       header('Semaine', {
+        lead: viewBtn,
         actions: [
           h('button', { class: 'icon-btn', 'aria-label': 'Menu en PDF', onclick: () => pdfMenu(currentWeek) }, icon('download')),
           h('a', { class: 'icon-btn', href: '#/reglages', 'aria-label': 'Réglages du planning' }, icon('users')),

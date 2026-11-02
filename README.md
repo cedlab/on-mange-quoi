@@ -37,6 +37,8 @@ C'est une application web installable (PWA) : elle s'ouvre en plein écran et fo
 - **Semaine** (étape 2) : planning du samedi au vendredi avec, pour chaque jour, Midi, Poupette, Soir et Poupette.
   - Ajouter un repas : toucher un créneau, puis choisir une recette (recherche, recettes souvent au menu, mieux notées) ou un texte libre (« Restes », « Cantine »…), avec le nombre de portions.
   - Poupette : bouton « Même chose que les grands ».
+  - Vue **compacte** par défaut : la date dans un rond et seuls les repas prévus, pour voir toute la semaine sur un écran. Le bouton en haut à gauche bascule vers la vue détaillée (créneau par créneau).
+  - **Texte libre** dans chaque repas (« Raclette chez Paul »), en plus des textes rapides (Restes, Cantine…).
   - Navigation : semaine par semaine, ou par le calendrier (toucher le titre de la semaine).
   - Sélection : « Sélectionner » pour choisir des jours ; « Période » pour choisir du … au … sur le calendrier, puis faire les courses, le PDF ou vider ces jours.
   - Depuis une fiche recette : « Planifier un repas ».
