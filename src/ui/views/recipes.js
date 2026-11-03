@@ -9,6 +9,7 @@ import { h, plural, setChildren } from '../dom.js';
 import { icon } from '../icons.js';
 import { newRecipeMenu } from './paste.js';
 import { bookmarkButton } from './selection.js';
+import { sourceIcon, sourceTag } from '../source-icon.js';
 
 const KEY = 'omq.recipeFilters';
 const PAGE = 60;
@@ -40,7 +41,7 @@ export function recipeThumb(r, size = 64) {
 export function thumbWithSource(r, size = 64) {
   const t = r.source?.type && r.source.type !== 'autre' ? sourceType(r.source.type) : null;
   return h('span', { class: 'thumb-wrap' }, recipeThumb(r, size),
-    t && h('span', { class: 'src-badge', title: t.label, role: 'img', 'aria-label': `Source : ${t.label}` }, t.emoji));
+    t && h('span', { class: 'src-badge', title: t.label, role: 'img', 'aria-label': `Source : ${t.label}` }, sourceIcon(r.source.type)));
 }
 
 /** Étoiles en lecture seule (demi-étoiles comprises). */
@@ -94,7 +95,7 @@ function filtersSheet(onChange) {
         h('div', { class: 'chips' }, [0, 20, 30, 45, 60, 120].map((n) => chip(n ? formatMinutes(n) : 'Peu importe',
           (criteria.maxMinutes || 0) === n, () => { criteria.maxMinutes = n || undefined; changed(); })))),
       h('div', { class: 'field' }, h('label', null, 'Source'),
-        h('div', { class: 'chips' }, SOURCE_TYPES.map((t) => chip(`${t.emoji} ${t.label}`, criteria.sourceTypes?.includes(t.id),
+        h('div', { class: 'chips' }, SOURCE_TYPES.map((t) => chip(sourceTag(t.id), criteria.sourceTypes?.includes(t.id),
           () => { toggleIn('sourceTypes', t.id); changed(); })))),
       tags.length > 0 && h('div', { class: 'field' }, h('label', null, 'Tags'),
         h('div', { class: 'chips' }, tags.slice(0, 40).map((t) => chip(`#${t}`, criteria.tags?.includes(t),

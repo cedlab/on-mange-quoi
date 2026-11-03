@@ -2,7 +2,6 @@
 import { store } from '../../app.js';
 import { addDays, formatShort, todayISO } from '../../logic/dates.js';
 import { category, formatRating } from '../../logic/recipes.js';
-import { sourceType } from '../../logic/sources.js';
 import { collectionStats, computeStats, forgottenFavorites } from '../../logic/stats.js';
 import { plannedDays } from '../../logic/plan.js';
 import { openCalendar } from '../calendar.js';
@@ -11,6 +10,7 @@ import { h, plural, setChildren } from '../dom.js';
 import { icon } from '../icons.js';
 import { planSheet } from './recipe.js';
 import { recipeThumb } from './recipes.js';
+import { sourceTag } from '../source-icon.js';
 
 const PERIODS = [
   { id: '4w', label: '4 semaines', days: 28 },
@@ -140,7 +140,7 @@ export function statsView() {
         label: (i) => (category(i.key) ? `${category(i.key).emoji} ${category(i.key).label}` : 'Sans catégorie'),
       }), s.categories.some((c) => c.key === 'aucune') && h('a', { class: 'btn small ghost', href: '#/classer' }, icon('layers', 16), 'Classer les recettes')),
       s.sources.length > 0 && section('📖 D’où viennent nos plats', barList(s.sources, {
-        label: (i) => `${sourceType(i.key).emoji} ${sourceType(i.key).label}`,
+        label: (i) => sourceTag(i.key),
       })),
       s.texts.length > 0 && section('🍕 Repas sans recette', barList(s.texts)),
       s.ingredients.length > 0 && section('🥕 Ingrédients les plus présents', h('p', { class: 'small muted' }, 'Nombre de plats qui en contiennent (hors sel, eau, huile).'), barList(s.ingredients)),

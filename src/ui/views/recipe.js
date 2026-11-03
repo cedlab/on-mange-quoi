@@ -13,6 +13,7 @@ import { SLOTS, slotEntries } from '../../logic/plan.js';
 import { h, setChildren } from '../dom.js';
 import { icon } from '../icons.js';
 import { bookmarkButton } from './selection.js';
+import { sourceIcon, sourceTag } from '../source-icon.js';
 
 /** Facteur d'échelle par recette (conservé pendant la session). */
 const factors = new Map();
@@ -313,7 +314,7 @@ export function recipeView({ id }) {
     const link = openLabel(src);
     return h('section', { class: 'card source-card' },
       h('div', { class: 'row gap' },
-        h('span', { class: 'source-emoji' }, t.emoji),
+        h('span', { class: 'source-emoji' }, sourceIcon(src.type)),
         h('div', { class: 'grow' },
           h('div', { class: 'small muted' }, `Source : ${t.label}`),
           h('strong', null, sourceLabel(src)))),
@@ -333,7 +334,7 @@ export function recipeView({ id }) {
         h('h1', { class: 'recipe-title' }, r.title),
         h('div', { class: 'row gap wrap' },
           h('button', { class: `chip-select ${c ? 'on' : ''}`, onclick: () => chooseCategory(r) }, c ? `${c.emoji} ${c.label}` : '+ Catégorie'),
-          r.source?.type && r.source.type !== 'autre' && h('span', { class: 'src-chip' }, `${sourceType(r.source.type).emoji} ${sourceType(r.source.type).label}`),
+          r.source?.type && r.source.type !== 'autre' && h('span', { class: 'src-chip' }, sourceTag(r.source.type)),
           starInput(r)),
         times.length > 0 && h('div', { class: 'times' },
           times.map(([l, m]) => h('span', null, h('small', null, l), formatMinutes(m))),

@@ -2448,3 +2448,28 @@ code {
   font-size: 0.85rem;
   font-weight: 700;
 }
+
+/* Pastille dessinée d'une source (Chronodrive : C blanc sur rond vert) */
+.src-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 1.15em;
+  height: 1.15em;
+  border-radius: 50%;
+  font-family: var(--font);
+  font-size: 1em;
+  font-weight: 900;
+  line-height: 1;
+  vertical-align: -0.15em;
+}
+.src-mark-chrono {
+  background: #4caf32;
+  color: #fff;
+  font-size: 0.95em;
+}
+.src-badge .src-mark {
+  width: 20px;
+  height: 20px;
+  font-size: 13px;
+  vertical-align: 0;
+}

@@ -8,6 +8,7 @@ import { h, setChildren } from '../dom.js';
 import { icon } from '../icons.js';
 import { processPhoto } from '../image.js';
 import { photoCache } from './recipe.js';
+import { sourceIcon } from '../source-icon.js';
 
 const TITLE_LABEL = {
   livre: ['Titre du livre', 'Le Larousse de la cuisine'],
@@ -140,7 +141,7 @@ export function recipeFormView({ id } = {}, query = {}) {
       h('div', { class: 'source-types' }, SOURCE_TYPES.map((t) => h('button', {
         type: 'button', class: `source-type ${src.type === t.id ? 'on' : ''}`,
         onclick: () => { src.type = t.id; drawSource(); },
-      }, h('span', null, t.emoji), t.label))),
+      }, h('span', null, sourceIcon(t.id)), t.label))),
       WITH_URL.has(src.type) && field('Lien de la recette', srcUrl,
         src.type === 'cookidoo' ? 'Sur le téléphone, ce lien ouvrira directement l’app Cookidoo.' : null),
       field(label, srcTitle),
