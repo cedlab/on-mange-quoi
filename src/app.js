@@ -50,7 +50,7 @@ function parse() {
 const TABS = [
   { id: 'week', href: '#/semaine', label: 'Semaine', icon: 'calendar' },
   { id: 'recipes', href: '#/', label: 'Recettes', icon: 'book' },
-  { id: 'selection', href: '#/envies', label: 'Mes envies', icon: 'bookmark', badge: () => store.selection?.length },
+  { id: 'selection', href: '#/envies', label: 'Mes envies', icon: 'bookmark' },
   { id: 'stats', href: '#/stats', label: 'Stats', icon: 'chart' },
   { id: 'more', href: '#/plus', label: 'Plus', icon: 'more' },
 ];
@@ -61,19 +61,7 @@ function tabbar(active) {
       href: t.href,
       class: `tab ${active === t.id ? 'on' : ''}`,
       'aria-current': active === t.id ? 'page' : undefined,
-    }, h('span', { class: 'tab-icon' }, icon(t.icon, 24), t.badge && h('span', { class: 'tab-badge', 'data-badge': t.id })),
-    h('span', { class: 'tab-label' }, t.label))));
-}
-
-/** Pastille du nombre d'éléments (Mes envies). */
-function paintBadges() {
-  for (const t of TABS) {
-    const el = t.badge && document.querySelector(`[data-badge="${t.id}"]`);
-    if (!el) continue;
-    const n = t.badge() || 0;
-    el.textContent = n > 99 ? '99+' : String(n);
-    el.hidden = !n;
-  }
+    }, h('span', { class: 'tab-icon' }, icon(t.icon, 24)), h('span', { class: 'tab-label' }, t.label))));
 }
 
 function mount(result, r, path) {
@@ -83,7 +71,6 @@ function mount(result, r, path) {
   current = { cleanup: result.cleanup, path, route: r };
   setChildren(app, h('main', { class: 'view' }, el), r?.tab ? tabbar(r.tab) : null);
   app.classList.toggle('no-tabs', !r?.tab);
-  paintBadges();
 }
 
 export function render() {
@@ -116,10 +103,7 @@ export function startRouter() {
   store.subscribe((kind) => {
     if (kind === 'status') render();
     else if (kind === 'recipes' && current?.route?.live) refresh();
-    else if (kind === 'selection') {
-      paintBadges();
-      if (current?.route?.live) refresh();
-    }
+    else if (kind === 'selection' && current?.route?.live) refresh();
   });
   render();
 }
