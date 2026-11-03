@@ -9,6 +9,7 @@ import { confirmDialog, emptyState, header, promptText, segmented, sheet, steppe
 import { formatDate, h, plural, setChildren } from '../dom.js';
 import { icon } from '../icons.js';
 import { recipeThumb } from './recipes.js';
+import { deliverFile } from '../deliver-file.js';
 
 function item(href, ic, label, sub, onclick) {
   const content = [h('span', { class: 'menu-icon' }, icon(ic, 22)), h('span', { class: 'grow' }, label, sub && h('small', null, sub)), icon('back', 18)];
@@ -23,26 +24,18 @@ async function exportBackup(btn) {
   try {
     const recipes = store.activeRecipes;
     const photos = new Map();
-    let i = 0;
-    for (const r of recipes) {
-      btn.textContent = `Préparation… ${++i}/${recipes.length}`;
-      if (r.thumb) {
-        const p = await store.getPhoto(r.id).catch(() => null);
-        if (p) photos.set(r.id, p);
-      }
+    const withPhoto = recipes.filter((r) => r.thumb);
+    // Photos chargées 8 par 8 (plus rapide qu'une à une).
+    for (let i = 0; i < withPhoto.length; i += 8) {
+      btn.textContent = `Préparation… ${Math.min(i + 8, withPhoto.length)}/${withPhoto.length} photos`;
+      const batch = withPhoto.slice(i, i + 8);
+      const data = await Promise.all(batch.map((r) => store.getPhoto(r.id).catch(() => null)));
+      batch.forEach((r, k) => data[k] && photos.set(r.id, data[k]));
     }
     const blob = new Blob([JSON.stringify(buildExport(recipes, photos))], { type: 'application/json' });
     const name = `on-mange-quoi-sauvegarde-${new Date().toISOString().slice(0, 10)}.json`;
     const file = new File([blob], name, { type: 'application/json' });
-    if (navigator.canShare?.({ files: [file] })) {
-      await navigator.share({ files: [file], title: name }).catch(() => {});
-    } else {
-      const a = h('a', { href: URL.createObjectURL(blob), download: name });
-      document.body.append(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(a.href), 10_000);
-    }
+    await deliverFile(file, { title: 'Sauvegarde des recettes' });
   } catch (e) {
     toast(`Sauvegarde impossible : ${e.message}`);
   } finally {
@@ -96,19 +89,7 @@ function recipeBookSheet() {
       const name = `livre-de-recettes-${new Date().toISOString().slice(0, 10)}.pdf`;
       const file = new File([doc.output('blob')], name, { type: 'application/pdf' });
       status.textContent = `${plural(doc.getNumberOfPages(), 'page', 'pages')}, ${Math.max(1, Math.round(file.size / 1e6))} Mo.`;
-      if (navigator.canShare?.({ files: [file] })) {
-        try {
-          await navigator.share({ files: [file], title: 'Livre de recettes' });
-          return;
-        } catch (e) {
-          if (e.name === 'AbortError') return;
-        }
-      }
-      const a = h('a', { href: URL.createObjectURL(file), download: name });
-      document.body.append(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(a.href), 60_000);
+      await deliverFile(file, { title: 'Livre de recettes' });
     } catch (e) {
       console.error(e);
       status.textContent = '';
