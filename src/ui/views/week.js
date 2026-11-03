@@ -13,6 +13,7 @@ import { icon } from '../icons.js';
 import { recipeThumb } from './recipes.js';
 import { micButton } from '../voice.js';
 import { plannedFromSelection, selectionLabel } from './selection.js';
+import { deliverFile } from '../deliver-file.js';
 
 let currentWeek = null;
 const VIEW_KEY = 'omq.weekView';
@@ -54,19 +55,7 @@ export async function exportMenuPdf(from, to, { blank = false } = {}) {
     const doc = buildMenuPdf(jsPDF, weeks);
     const name = `menu-${weeks[0].start}${weeks.length > 1 ? `-${weeks.length}-semaines` : ''}.pdf`;
     const file = new File([doc.output('blob')], name, { type: 'application/pdf' });
-    if (navigator.canShare?.({ files: [file] })) {
-      try {
-        await navigator.share({ files: [file], title: 'Menu de la semaine' });
-        return;
-      } catch (e) {
-        if (e.name === 'AbortError') return;
-      }
-    }
-    const a = h('a', { href: URL.createObjectURL(file), download: name });
-    document.body.append(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 30_000);
+    await deliverFile(file, { title: 'Menu de la semaine' });
   } catch (e) {
     console.error(e);
     toast(`PDF impossible : ${e.message}`);
