@@ -61,7 +61,12 @@ function stepText(text) {
   let last = 0;
   for (const m of text.matchAll(new RegExp(TM_SETTING.source, 'gi'))) {
     if (m.index > last) parts.push(text.slice(last, m.index));
-    parts.push(h('strong', { class: 'tm' }, m[0]));
+    // Ⓡ et Ⓢ s'affichent avec les mêmes pictos que sur le Thermomix.
+    parts.push(h('strong', { class: 'tm' }, m[0].split(/([ⓇⓈ])/).filter(Boolean).map((x) => (x === 'Ⓡ'
+      ? h('span', { class: 'tm-icon', title: 'Sens inverse', role: 'img', 'aria-label': 'sens inverse' }, icon('tmReverse', 19))
+      : x === 'Ⓢ'
+        ? h('span', { class: 'tm-icon', title: 'Vitesse mijotage', role: 'img', 'aria-label': 'mijotage' }, icon('tmSpoon', 19))
+        : x))));
     last = m.index + m[0].length;
   }
   parts.push(text.slice(last));
@@ -135,7 +140,7 @@ export function recipeShareText(r, factor = 1) {
     let n = 0;
     for (const s of r.steps) {
       if (s.section) lines.push('', s.section);
-      else lines.push(`${++n}. ${s.text}`);
+      else lines.push(`${++n}. ${s.text.replace(/Ⓡ/g, 'sens inverse').replace(/vitesse\s*Ⓢ/gi, 'vitesse mijotage').replace(/Ⓢ/g, 'mijotage')}`);
     }
   }
   if (r.notes) lines.push('', `💡 ${r.notes}`);
