@@ -225,7 +225,7 @@ export function openSlot(date, slotId) {
 function entryChip(e) {
   const r = e.recipeId ? store.recipe(e.recipeId) : null;
   return h('span', { class: `meal ${e.text ? 'meal-text' : ''}` },
-    r?.thumb ? h('img', { class: 'meal-thumb', src: r.thumb, alt: '' }) : h('span', { class: 'meal-thumb meal-emoji' }, e.text ? '✏️' : '🍽️'),
+    r?.thumb ? h('img', { class: 'meal-thumb', src: r.thumb, alt: '' }) : h('span', { class: 'meal-thumb meal-emoji' }, e.text ? '✏️' : icon('book', 15)),
     h('span', { class: 'meal-title' }, entryLabel(e, store.byId)),
     e.recipeId && e.servings && h('span', { class: 'meal-servings' }, String(e.servings).replace('.', ',')));
 }
@@ -321,7 +321,10 @@ export function weekView(_, query = {}) {
             h('span', { class: 'cday-meals' }, entries.map((e) => {
               const r = e.recipeId ? store.recipe(e.recipeId) : null;
               return h('span', { class: `cday-meal ${e.text ? 'free' : ''}` },
-                r?.thumb && h('img', { src: r.thumb, alt: '' }), entryLabel(e, store.byId));
+                // Plat de l'onglet Recettes : sa photo, sinon une petite icône livre.
+                r?.thumb ? h('img', { src: r.thumb, alt: '' })
+                  : e.recipeId ? h('span', { class: 'cday-recipe-icon', title: 'Recette', 'aria-label': 'Recette' }, icon('book', 13)) : null,
+                entryLabel(e, store.byId));
             }))))
           : h('button', { class: 'cday-empty', onclick: () => (selecting ? toggleSel(date) : addChooser(date)) }, 'Rien de prévu'),
         !selecting && h('button', { class: 'cday-add', 'aria-label': `Ajouter un repas le ${dayName(date).toLowerCase()} ${dayNumber(date)}`, onclick: () => addChooser(date) }, icon('plus', 18))));
