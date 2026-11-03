@@ -1406,6 +1406,14 @@ details summary {
   color: var(--accent);
   white-space: nowrap;
 }
+.tm-icon {
+  display: inline-flex;
+  vertical-align: -4px;
+  margin: 0 1px;
+}
+.tm-icon svg {
+  stroke-width: 2.6;
+}
 
 /* ==========================================================================
    Semaine

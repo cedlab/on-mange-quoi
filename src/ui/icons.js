@@ -46,6 +46,9 @@ const P = {
   reset: '<path d="M4 4v6h6"/><path d="M4.5 15a8 8 0 1 0 1.7-8.4L4 10"/>',
   bookmark: '<path d="M6.5 3.5h11v17l-5.5-4-5.5 4z"/>',
   mic: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/>',
+  // Réglages Thermomix : sens inverse (flèche qui tourne à gauche) et mijotage (cuillère).
+  tmReverse: '<path d="M5.5 12.5a6.8 6.8 0 1 0 2-5.3"/><path d="M6.8 2.8v4.6h4.6"/>',
+  tmSpoon: '<ellipse cx="12" cy="7.2" rx="4.4" ry="5.2" fill="currentColor" stroke="none"/><path d="M12 12v9" stroke-width="2.6"/>',
   layers: '<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>',
 };
 
