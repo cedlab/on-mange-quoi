@@ -1,5 +1,5 @@
 // Onglet « Semaine » : planning du samedi au vendredi (Midi / Poupette / Soir / Poupette).
-import { navigate, store } from '../../app.js';
+import { store } from '../../app.js';
 import {
   addDays, dayName, dayNumber, daysBetween, formatLong, formatRange, formatShort, todayISO, weekDays, weekStart, weeksBetween,
 } from '../../logic/dates.js';
@@ -11,6 +11,7 @@ import { confirmDialog, header, sheet, toast } from '../components.js';
 import { h, plural, setChildren } from '../dom.js';
 import { icon } from '../icons.js';
 import { recipeThumb } from './recipes.js';
+import { micButton } from '../voice.js';
 
 let currentWeek = null;
 const VIEW_KEY = 'omq.weekView';
@@ -32,7 +33,7 @@ function defaultServings(slotId) {
   return slot?.child ? store.settings.childServings : store.settings.familyServings;
 }
 
-// --- PDF et courses (partagés avec les autres écrans) -------------------------
+// --- Menu PDF (partagé avec les autres écrans) --------------------------------
 
 /** Menu PDF des semaines couvrant la période (jours hors période laissés vides). */
 export async function exportMenuPdf(from, to, { blank = false } = {}) {
@@ -92,16 +93,6 @@ export function pdfMenu(week) {
   { title: 'Menu en PDF' });
 }
 
-export async function makeShopping(from, to) {
-  try {
-    const n = await store.generateShopping(from, to);
-    toast(n ? `Liste de courses prête (${plural(n, 'article', 'articles')}).` : 'Aucune recette planifiée sur cette période.');
-    navigate('/courses');
-  } catch (e) {
-    toast(`Liste impossible : ${e.message}`);
-  }
-}
-
 // --- Choix d'un plat pour un créneau -----------------------------------------------
 
 export function openSlot(date, slotId) {
@@ -157,13 +148,17 @@ export function openSlot(date, slotId) {
     },
   },
   h('span', { class: 'field-label' }, '✏️ Texte libre'),
-  h('div', { class: 'row gap' }, freeInput, h('button', { class: 'btn primary', type: 'submit' }, 'Ajouter')));
+  h('div', { class: 'row gap' }, freeInput,
+    // Dictée : le texte dit est écrit dans le champ, il reste à toucher « Ajouter ».
+    micButton(freeInput),
+    h('button', { class: 'btn primary', type: 'submit' }, 'Ajouter')));
 
   const search = h('input', {
     class: 'input', type: 'search', placeholder: 'Chercher une recette…', autocomplete: 'off', enterkeyhint: 'search',
     oninput: () => { query = search.value; drawResults(); },
   });
   const results = h('div', { class: 'slot-results' });
+  const searchRow = h('div', { class: 'row gap' }, search, micButton(search));
 
   /** Recettes proposées : recherche, sinon les plus souvent planifiées puis les mieux notées. */
   function drawResults() {
@@ -217,7 +212,7 @@ export function openSlot(date, slotId) {
       h('div', { class: 'chips' }, QUICK_TEXTS.map((t) => h('button', { class: 'chip-select', onclick: () => addText(t) }, t))),
       ideaRow(),
       h('span', { class: 'field-label' }, '📖 Une recette'),
-      search,
+      searchRow,
       results);
     drawResults();
   }
@@ -259,8 +254,7 @@ export function weekView(_, query = {}) {
         h('strong', { class: 'grow' }, days.length ? `${plural(days.length, 'jour', 'jours')} sélectionné${days.length > 1 ? 's' : ''}` : 'Touche les jours à sélectionner'),
         h('button', { class: 'btn small ghost', onclick: () => { selecting = false; selected.clear(); draw(); } }, 'Annuler')),
       h('div', { class: 'row gap' },
-        h('button', { class: 'btn small primary grow', disabled: !days.length, onclick: () => makeShopping(a, b) }, icon('cart', 18), 'Courses'),
-        h('button', { class: 'btn small ghost grow', disabled: !days.length, onclick: () => exportMenuPdf(a, b) }, '📄 PDF'),
+        h('button', { class: 'btn small primary grow', disabled: !days.length, onclick: () => exportMenuPdf(a, b) }, '📄 Menu PDF'),
         h('button', {
           class: 'btn small danger-ghost', disabled: !days.length, onclick: async () => {
             if (!(await confirmDialog(`Vider ${plural(days.length, 'jour', 'jours')} du planning ?`, { ok: 'Vider', danger: true }))) return;
@@ -360,15 +354,14 @@ export function weekView(_, query = {}) {
         },
       }, h('small', null, dayName(d).slice(0, 3)), h('strong', null, String(dayNumber(d)))))),
       !selecting && h('div', { class: 'week-actions' },
-        h('button', { class: 'btn small primary', onclick: () => makeShopping(currentWeek, end) }, icon('cart', 18), 'Courses de la semaine'),
+        h('button', { class: 'btn small primary', onclick: () => pdfMenu(currentWeek) }, '📄 Menu PDF'),
         h('button', { class: 'btn small ghost', onclick: () => { selecting = true; draw(); } }, icon('check', 18), 'Sélectionner'),
         h('button', {
           class: 'btn small ghost', onclick: () => openCalendar({
             title: 'Choisir une période', from: currentWeek, to: end, planned,
             hint: 'Touche le premier jour, puis le dernier.',
             actions: [
-              { label: '🛒 Liste de courses pour ces jours', primary: true, onPick: (a, b) => makeShopping(a, b) },
-              { label: '📄 Menu PDF de ces jours', onPick: (a, b) => exportMenuPdf(a, b) },
+              { label: '📄 Menu PDF de ces jours', primary: true, onPick: (a, b) => exportMenuPdf(a, b) },
               { label: 'Sélectionner ces jours', onPick: (a, b) => { selecting = true; selected.clear(); for (const d of daysBetween(a, b)) selected.add(d); go(weekStart(a)); } },
             ],
           }),

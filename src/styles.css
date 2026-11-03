@@ -1821,144 +1821,6 @@ details summary {
 }
 
 /* ==========================================================================
-   Courses
-   ========================================================================== */
-
-.shop-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.shop-head .grow {
-  display: flex;
-  flex-direction: column;
-}
-.shop-progress {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin: 0 16px;
-}
-.add-item {
-  display: flex;
-  gap: 8px;
-  margin: 0 16px;
-}
-.add-item .input {
-  flex: 1;
-}
-.shop-group {
-  margin: 0 16px;
-}
-.shop-group h3 {
-  margin: 6px 4px 8px;
-  font-size: 1rem;
-}
-.shop-group summary {
-  padding: 8px 4px;
-}
-.shop-list {
-  border-radius: var(--radius);
-  background: var(--surface);
-  box-shadow: var(--shadow);
-  overflow: hidden;
-}
-.shop-item {
-  display: flex;
-  align-items: center;
-  border-bottom: 1px solid var(--line);
-}
-.shop-item:last-child {
-  border-bottom: 0;
-}
-.shop-check {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 54px;
-  padding: 8px 4px 8px 14px;
-  border: 0;
-  background: none;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-.check-box {
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  border: 2px solid var(--line);
-  border-radius: 50%;
-}
-.shop-item.checked .check-box {
-  border-color: var(--primary);
-  background: var(--primary);
-  color: var(--on-primary);
-}
-.shop-text {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-.shop-name {
-  font-weight: 700;
-}
-.shop-text small {
-  color: var(--muted);
-  font-size: 0.78rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.shop-qty {
-  flex: none;
-  max-width: 42%;
-  color: var(--primary-2);
-  font-weight: 800;
-  font-size: 0.92rem;
-  text-align: right;
-  overflow-wrap: anywhere;
-}
-.shop-item.checked .shop-name,
-.shop-item.checked .shop-qty {
-  color: var(--muted);
-  text-decoration: line-through;
-}
-.shop-group.done .btn {
-  width: 100%;
-  margin-top: 10px;
-}
-.aisle-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-}
-.aisle-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px;
-  border: 2px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  color: inherit;
-  font: inherit;
-  font-size: 0.85rem;
-  font-weight: 700;
-  text-align: left;
-  cursor: pointer;
-}
-.aisle-btn.on {
-  border-color: var(--primary);
-  background: color-mix(in srgb, var(--primary) 12%, var(--surface));
-}
-
-/* ==========================================================================
    On mange quoi ? (idée au hasard)
    ========================================================================== */
 
@@ -2389,5 +2251,32 @@ code {
   cursor: pointer;
 }
 .free-text .row .input {
+  min-width: 0;
+}
+
+/* Dictée vocale */
+.mic-btn {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--primary-2);
+  cursor: pointer;
+}
+.mic-btn.listening {
+  background: var(--danger);
+  color: #fff;
+  animation: mic-pulse 1.2s ease-in-out infinite;
+}
+@keyframes mic-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--danger) 45%, transparent); }
+  50% { box-shadow: 0 0 0 10px color-mix(in srgb, var(--danger) 0%, transparent); }
+}
+.slot-sheet .row > .input[type=search] {
+  flex: 1;
   min-width: 0;
 }

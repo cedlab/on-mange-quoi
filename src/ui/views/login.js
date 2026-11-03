@@ -58,7 +58,7 @@ export function gateView(store) {
   }, h('span', { class: 'g-logo', 'aria-hidden': 'true' }, 'G'), 'Se connecter avec Google');
   const err = store.authError;
   return h('div', { class: 'gate' },
-    brand('Les recettes, les menus de la semaine et les courses de la famille.'),
+    brand('Les recettes et les menus de la semaine de la famille.'),
     err && h('div', { class: 'card stack' },
       h('strong', null, 'La connexion n’a pas abouti'),
       h('p', { class: 'small muted' }, AUTH_ERRORS[err.code] || `${err.code || ''} ${err.message || ''}`.trim())),

@@ -73,8 +73,8 @@ describe('recettes', () => {
   });
 });
 
-describe('planning et courses', () => {
-  it('planifie, génère la liste et garde les coches', async () => {
+describe('planning', () => {
+  it('planifie, vide des jours et enregistre les réglages', async () => {
     const store = await signedIn('a@b.fr', ['a@b.fr']);
     const id = await store.saveRecipe(null, {
       title: 'Quiche', servings: 6, source: { type: 'perso', title: 'Moi' },
@@ -88,35 +88,9 @@ describe('planning et courses', () => {
       midi: [{ recipeId: id, title: 'Quiche', servings: 3 }], midiP: [{ text: 'Purée' }],
     });
 
-    expect(await store.generateShopping('2026-09-05', '2026-09-11')).toBe(3);
-    await tick();
-    const oeuf = store.shopping.find((i) => i.key === 'oeuf');
-    expect(oeuf.amounts).toEqual([{ qty: 4.5, unit: null }]);
-    expect(store.shoppingMeta).toMatchObject({ from: '2026-09-05', to: '2026-09-11' });
-
-    await store.toggleItem(oeuf.id, true);
-    await store.addItem('2 paquets de lessive');
-    await tick();
-    const lessive = store.shopping.find((i) => i.manual);
-    expect(lessive).toMatchObject({ name: 'lessive', amounts: [{ qty: 2, unit: 'paquet' }], aisle: 'maison' });
-
-    // Reclasser un article : retenu pour les prochaines listes.
-    const lardon = store.shopping.find((i) => i.key === 'lardon');
-    await store.setItemAisle(lardon, 'boucherie');
-    await tick();
-    expect(store.aisleOverrides).toEqual({ lardon: 'boucherie' });
-
-    // Le samedi est vidé : la liste est régénérée sans perdre la coche ni l'ajout.
     await store.clearDays(['2026-09-05']);
-    await store.generateShopping('2026-09-05', '2026-09-11');
     await tick();
-    expect(store.shopping.find((i) => i.key === 'oeuf')).toMatchObject({ checked: true, amounts: [{ qty: 3, unit: null }] });
-    expect(store.shopping.find((i) => i.key === 'lardon').aisle).toBe('boucherie');
-    expect(store.shopping.some((i) => i.manual)).toBe(true);
-
-    await store.clearChecked();
-    await tick();
-    expect(store.shopping.some((i) => i.key === 'oeuf')).toBe(false);
+    expect(store.plans['2026-09-05'].days['2026-09-05']).toEqual({ midi: [], midiP: [], soir: [], soirP: [] });
     await store.saveSettings({ familyServings: 3 });
     await tick();
     expect(store.settings).toMatchObject({ familyServings: 3, childServings: 1 });

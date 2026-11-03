@@ -116,7 +116,7 @@ export function createFirebaseBackend() {
       else await deleteDoc(doc(db, 'recipePhotos', id));
     },
 
-    // --- Accès générique (planning, courses, réglages) -----------------------
+    // --- Accès générique (planning, réglages) -----------------------
     // Chemins « collection/document » : « plans/2026-11-07 », « config/settings ».
     watchCol(path, onChange, onError) {
       return onSnapshot(collection(db, ...path.split('/')), (snap) => {

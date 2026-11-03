@@ -157,7 +157,7 @@ export function membersView() {
           toast(`${e} peut maintenant se connecter.`);
         },
       }, icon('plus', 20), 'Ajouter un membre'),
-      h('p', { class: 'small muted' }, 'Tous les membres ont les mêmes droits : voir et modifier les recettes, les menus, les courses, et gérer cette liste.'));
+      h('p', { class: 'small muted' }, 'Tous les membres ont les mêmes droits : voir et modifier les recettes et les menus, et gérer cette liste.'));
   }
   load();
   return h('div', { class: 'page' }, header('Membres de la famille', { back: '#/plus' }), list);
@@ -245,7 +245,7 @@ export function settingsView() {
         stepper({ value: st.familyServings, min: 1, max: 20, label: 'Personnes', format: (v) => `${v} pers.`, onchange: (v) => save({ familyServings: v }) })),
       h('div', { class: 'card stack' },
         h('h2', null, '👧 Poupette'),
-        h('p', { class: 'small muted' }, 'Portion proposée pour les lignes Poupette (0,5 = une demi-portion d’adulte). Ses repas comptent dans la liste de courses.'),
+        h('p', { class: 'small muted' }, 'Portion proposée pour les lignes Poupette (0,5 = une demi-portion d’adulte).'),
         stepper({ value: st.childServings, min: 0.5, max: 4, step: 0.5, label: 'Portion de Poupette', format: (v) => `${fmt(v)} portion`, onchange: (v) => save({ childServings: v }) })),
       h('p', { class: 'small muted' }, 'La semaine va du samedi au vendredi, comme le menu papier.')));
 }
