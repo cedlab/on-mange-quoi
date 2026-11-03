@@ -97,7 +97,7 @@ describe('planning', () => {
   });
 });
 
-describe('Ma sélection', () => {
+describe('Mes envies', () => {
   it('ajoute, retire, remet une recette et garde les idées écrites', async () => {
     const store = await signedIn('a@b.fr', ['a@b.fr']);
     const id = await store.saveRecipe(null, { title: 'Lasagnes', source: { type: 'perso', title: 'Moi' } });

@@ -48,7 +48,7 @@ C'est une application web installable (PWA) : elle s'ouvre en plein écran et fo
   - les recettes pas mangées depuis longtemps (rien de ce qui a été au menu ces 3 dernières semaines) ;
   - les mieux notées.
   Les raisons du choix sont affichées. Filtres : catégorie, rapide, de saison, bien notées, Thermomix. On peut planifier la recette directement, et 3 autres idées sont proposées. Dans la Semaine, chaque créneau propose aussi une idée (Ajouter, ou 🔀 pour une autre).
-- **Ma sélection** (onglet 🔖) : les recettes qui tentent, sans date. On les y ajoute avec le 🔖 de la liste des recettes, depuis la fiche d'une recette (« Ajouter à Ma sélection »), depuis l'idée au hasard (« Garder pour plus tard »), ou en écrivant une idée (au clavier ou à la voix). La liste est commune à toute la famille et indique qui a ajouté quoi, et quand. « Mettre au menu » choisit le jour, le repas et les portions, puis retire l'élément de la sélection (« Garder » pour l'y laisser). Dans la Semaine, la fenêtre d'un repas propose aussi la sélection en premier, pour l'ajouter d'un seul geste. Une pastille sur l'onglet donne le nombre d'éléments.
+- **Mes envies** (onglet 🔖) : les recettes qui tentent, sans date. On les y ajoute avec le 🔖 de la liste des recettes, depuis la fiche d'une recette (« Ajouter à Mes envies »), depuis l'idée au hasard (« Garder pour plus tard »), ou en écrivant une idée (au clavier ou à la voix). La liste est commune à toute la famille et indique qui a ajouté quoi, et quand. « Mettre au menu » choisit le jour, le repas et les portions, puis retire l'élément de la liste (« Garder » pour l'y laisser). Dans la Semaine, la fenêtre d'un repas propose aussi Mes envies en premier, pour l'ajouter d'un seul geste. Une pastille sur l'onglet donne le nombre d'éléments.
 - **Stats** (onglet) : ce qu'on mange d'après le planning, sur 4 semaines, 3 mois, 12 mois, tout l'historique ou une période choisie au calendrier.
   - En chiffres : nombre de repas, part de « fait maison », recettes différentes, part de plats de saison, note moyenne, repas de Poupette (dont « comme les grands »).
   - En classements : recettes les plus cuisinées, plats par semaine, catégories, origine des recettes, repas sans recette (Restes, Cantine…), ingrédients les plus présents, jours les plus remplis.
@@ -167,5 +167,5 @@ worker/wrangler.toml     sa configuration (déploiement depuis GitHub, répertoi
 | `recipePhotos/{id}` | la photo, d'environ 100 Ko, chargée à l'ouverture de la fiche |
 | `config/access` | `{ members: [...] }`, la liste des adresses autorisées |
 | `plans/{samedi}` | une semaine : `{ days: { "2026-11-07": { midi: [...], midiP: [...], soir: [...], soirP: [...] } } }` |
-| `selection/{id}` | Ma sélection : `{ recipeId, title }` ou `{ text }`, avec `addedBy`, `addedByName` et `addedAt` (l'id est celui de la recette) |
+| `selection/{id}` | Mes envies : `{ recipeId, title }` ou `{ text }`, avec `addedBy`, `addedByName` et `addedAt` (l'id est celui de la recette) |
 | `config/settings` | réglages du planning et adresse du relais d'import |

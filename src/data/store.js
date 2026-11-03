@@ -220,7 +220,7 @@ export class Store {
     await this.backend.writeOps([...byWeek.entries()].map(([w, days]) => ({ op: 'set', path: `plans/${w}`, data: { days }, merge: true })));
   }
 
-  // --- Ma sélection (recettes et idées « à faire un de ces jours ») ------------
+  // --- Mes envies (recettes et idées « à faire un de ces jours ») ------------
 
   isSelected(recipeId) {
     return this.selection.some((i) => i.recipeId === recipeId);

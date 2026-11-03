@@ -112,7 +112,7 @@ export function openSlot(date, slotId) {
   };
   const addRecipe = (r) => save([...entries, { recipeId: r.id, title: r.title, servings: defaultServings(slotId) }]);
   const addText = (text) => text && save([...entries, { text }]);
-  // Depuis Ma sélection : ajouté au repas, et retiré de la sélection (avec « Garder »).
+  // Depuis Mes envies : ajouté au repas, et retiré de la sélection (avec « Garder »).
   const addFromSelection = async (item) => {
     const r = item.recipeId ? store.recipe(item.recipeId) : null;
     await save([...entries, r ? { recipeId: r.id, title: r.title, servings: defaultServings(slotId) } : { text: item.text }]);
@@ -122,7 +122,7 @@ export function openSlot(date, slotId) {
   const selectionRow = () => {
     const items = store.selection.filter((i) => i.text || (store.recipe(i.recipeId) && !store.recipe(i.recipeId).deleted));
     return items.length > 0 && h('div', { class: 'stack tight' },
-      h('span', { class: 'field-label' }, '🔖 Ma sélection'),
+      h('span', { class: 'field-label' }, '🔖 Mes envies'),
       h('div', { class: 'sel-strip' }, items.map((i) => {
         const r = i.recipeId ? store.recipe(i.recipeId) : null;
         return h('button', { class: 'sel-chip', onclick: () => addFromSelection(i) },

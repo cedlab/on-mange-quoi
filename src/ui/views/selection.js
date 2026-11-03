@@ -1,4 +1,4 @@
-// « Ma sélection » : les recettes (ou idées) qui tentent la famille, sans date.
+// « Mes envies » : les recettes (ou idées) qui tentent la famille, sans date.
 // On les garde ici, puis on les met au menu de la semaine en deux touches.
 import { navigate, store } from '../../app.js';
 import { filterRecipes, normalizeText } from '../../logic/recipes.js';
@@ -27,7 +27,7 @@ export const selectionLabel = (item) => (item.recipeId ? store.recipe(item.recip
 /** Toast après une mise au menu : l'élément quitte la sélection, avec « Garder » pour le remettre. */
 export async function plannedFromSelection(item, where) {
   await store.removeSelection(item.id);
-  toast(`Au menu : ${where}. Retiré de Ma sélection.`, { action: 'Garder', duration: 6000, onAction: () => store.restoreSelection(item) });
+  toast(`Au menu : ${where}. Retiré de Mes envies.`, { action: 'Garder', duration: 6000, onAction: () => store.restoreSelection(item) });
 }
 
 // --- Bouton 🔖 (liste, fiche recette, idée au hasard) ---------------------------
@@ -44,7 +44,7 @@ function paint(b, on) {
 }
 
 /**
- * Bouton pour ajouter / retirer une recette de Ma sélection.
+ * Bouton pour ajouter / retirer une recette de Mes envies.
  * labels : { off, on } pour un bouton avec texte ; sinon une simple icône.
  */
 export function bookmarkButton(r, { labels, className = '' } = {}) {
@@ -57,7 +57,7 @@ export function bookmarkButton(r, { labels, className = '' } = {}) {
     class: labels ? `btn ghost sel-btn ${className}` : `bookmark-btn ${className}`,
     'data-sel-recipe': r.id,
     'data-on': labels?.on, 'data-off': labels?.off,
-    'aria-label': labels ? undefined : 'Ma sélection',
+    'aria-label': labels ? undefined : 'Mes envies',
     onclick: async (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -65,8 +65,8 @@ export function bookmarkButton(r, { labels, className = '' } = {}) {
       paint(b, !was); // tout de suite, sans attendre la base
       try {
         const now = await store.toggleSelection(r);
-        toast(now ? `« ${r.title} » ajoutée à Ma sélection.` : 'Retirée de Ma sélection.',
-          now ? { action: 'Voir', onAction: () => navigate('/selection') } : { action: 'Annuler', onAction: () => store.toggleSelection(r) });
+        toast(now ? `« ${r.title} » ajoutée à Mes envies.` : 'Retirée de Mes envies.',
+          now ? { action: 'Voir', onAction: () => navigate('/envies') } : { action: 'Annuler', onAction: () => store.toggleSelection(r) });
       } catch (err) {
         paint(b, was);
         toast(`Non enregistré : ${err.message}`);
@@ -93,7 +93,7 @@ function pickRecipes() {
   }
   setChildren(body, h('div', { class: 'row gap' }, search, micButton(search, { onFinal: draw })), results);
   draw();
-  sheet(body, { title: 'Ajouter à Ma sélection', className: 'tall' });
+  sheet(body, { title: 'Ajouter à Mes envies', className: 'tall' });
   setTimeout(() => search.focus(), 250);
 }
 
@@ -106,9 +106,9 @@ function itemCard(item) {
   const thumb = r ? recipeThumb(r, 64) : h('span', { class: 'thumb thumb-empty', style: { width: '64px', height: '64px' } }, item.text ? '✏️' : '🍽️');
   const title = h('strong', null, selectionLabel(item));
   const remove = h('button', {
-    class: 'icon-btn', 'aria-label': 'Retirer de Ma sélection', onclick: async () => {
+    class: 'icon-btn', 'aria-label': 'Retirer de Mes envies', onclick: async () => {
       await store.removeSelection(item.id);
-      toast('Retiré de Ma sélection.', { action: 'Annuler', onAction: () => store.restoreSelection(item) });
+      toast('Retiré de Mes envies.', { action: 'Annuler', onAction: () => store.restoreSelection(item) });
     },
   }, icon('close', 18));
   const link = (child) => (r && !gone ? h('a', { class: 'sel-link', href: `#/recette/${r.id}` }, child) : child);
@@ -161,7 +161,7 @@ export function selectionView() {
   draw();
   return {
     el: h('div', { class: 'page' },
-      header('Ma sélection'),
+      header('Mes envies'),
       h('p', { class: 'small muted pad-x sel-intro' }, 'Les recettes qui vous tentent, sans date. Mettez-les au menu quand vous voulez.'),
       h('div', { class: 'stack' }, form, countEl, list)),
     cleanup: unsub,

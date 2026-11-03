@@ -50,7 +50,7 @@ function parse() {
 const TABS = [
   { id: 'week', href: '#/semaine', label: 'Semaine', icon: 'calendar' },
   { id: 'recipes', href: '#/', label: 'Recettes', icon: 'book' },
-  { id: 'selection', href: '#/selection', label: 'Ma sélection', icon: 'bookmark', badge: () => store.selection?.length },
+  { id: 'selection', href: '#/envies', label: 'Mes envies', icon: 'bookmark', badge: () => store.selection?.length },
   { id: 'stats', href: '#/stats', label: 'Stats', icon: 'chart' },
   { id: 'more', href: '#/plus', label: 'Plus', icon: 'more' },
 ];
@@ -65,7 +65,7 @@ function tabbar(active) {
     h('span', { class: 'tab-label' }, t.label))));
 }
 
-/** Pastille du nombre d'éléments (Ma sélection). */
+/** Pastille du nombre d'éléments (Mes envies). */
 function paintBadges() {
   for (const t of TABS) {
     const el = t.badge && document.querySelector(`[data-badge="${t.id}"]`);

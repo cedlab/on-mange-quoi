@@ -337,7 +337,7 @@ export function recipeView({ id }) {
       r.notes && h('section', { class: 'card notes' }, h('h2', null, 'Notes'), h('p', { class: 'pre' }, r.notes)),
       sourceBlock(),
       h('button', { class: 'btn primary', onclick: () => planSheet(r) }, icon('calendar', 20), 'Planifier un repas'),
-      bookmarkButton(r, { labels: { off: 'Ajouter à Ma sélection', on: 'Dans Ma sélection' } }),
+      bookmarkButton(r, { labels: { off: 'Ajouter à mes envies', on: 'Dans mes envies' } }),
       h('div', { class: 'row gap wrap' },
         h('button', { class: 'btn ghost grow', onclick: () => share(r, f) }, icon('share', 20), 'Partager'),
         h('a', { class: 'btn ghost grow', href: `#/recette/${id}/modifier` }, icon('edit', 20), 'Modifier')),

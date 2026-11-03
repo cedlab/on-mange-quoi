@@ -44,7 +44,7 @@ route('/corbeille', trashView, { tab: 'more', live: true });
 route('/semaine', weekView, { tab: 'week' });
 route('/reglages', settingsView, { tab: 'more' });
 route('/stats', statsView, { tab: 'stats' });
-route('/selection', selectionView, { tab: 'selection' });
+route('/envies', selectionView, { tab: 'selection' });
 
 function isDemo() {
   try {
