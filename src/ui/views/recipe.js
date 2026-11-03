@@ -1,8 +1,7 @@
 // Fiche d'une recette : portions et quantités dynamiques, étapes, source.
 import { navigate, store } from '../../app.js';
 import {
-  factorForIngredient, factorForServings, formatQuantity, formatServings, ingredientToLine, unitLabel,
-} from '../../logic/quantities.js';
+  factorForIngredient, factorForServings, formatQuantity, formatServings, ingredientToLine, unitLabel, fixThermomixIcons, parseIngredientLine } from '../../logic/quantities.js';
 import {
   CATEGORIES, category, formatMinutes, formatRating, MAX_STARS, normalizeRating, starFills, totalMinutes,
 } from '../../logic/recipes.js';
@@ -56,7 +55,8 @@ export function chooseCategory(r) {
 }
 
 /** Texte d'une étape, réglages Thermomix (« 10 sec/vitesse 6 ») en évidence. */
-function stepText(text) {
+function stepText(raw) {
+  const text = fixThermomixIcons(raw); // aussi pour les recettes déjà enregistrées
   const parts = [];
   let last = 0;
   for (const m of text.matchAll(new RegExp(TM_SETTING.source, 'gi'))) {
@@ -254,7 +254,9 @@ export function recipeView({ id }) {
     const f = factors.get(id) || 1;
     const items = [];
     let group = null;
-    for (const ing of r.ingredients || []) {
+    for (const raw of r.ingredients || []) {
+      // « &frac12; c. à café de sel » enregistré tel quel par un ancien import : relu.
+      const ing = !raw.qty && /&(frac\d+|amp|nbsp);/.test(raw.name || '') ? { ...parseIngredientLine(raw.name), ...(raw.group ? { group: raw.group } : {}) } : raw;
       if ((ing.group || null) !== group) {
         group = ing.group || null;
         if (group) items.push(h('li', { class: 'ing-group' }, group));

@@ -13,10 +13,12 @@ const ENTITIES = {
 };
 
 export function decodeEntities(s) {
-  return String(s ?? '')
+  const once = (x) => x
     .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
     .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(Number(d)))
-    .replace(/&([a-z]+);/gi, (m, n) => ENTITIES[n] ?? m);
+    .replace(/&([a-z0-9]+);/gi, (m, n) => ENTITIES[n] ?? m);
+  // Deux passes : certains sites encodent deux fois (« &amp;frac12; »).
+  return once(once(String(s ?? '')));
 }
 
 /** Texte propre : entités décodées, balises HTML retirées, espaces normalisés. */

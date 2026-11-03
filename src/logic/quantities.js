@@ -102,8 +102,11 @@ export function parseNumber(s) {
  * Analyse une ligne d'ingrédient en français : « 200 g de farine »,
  * « 2 à 3 gousses d'ail (hachées) », « 1 c. à s. d'huile », « sel, poivre ».
  */
+const HTML_FRACTIONS = { frac12: '½', frac14: '¼', frac34: '¾', nbsp: ' ', amp: '&' };
+
 export function parseIngredientLine(line) {
-  const raw = String(line || '').trim();
+  // « &frac12; c. à café de sel » : entité HTML restée dans le texte d'un site.
+  const raw = String(line || '').replace(/&(frac12|frac14|frac34|nbsp|amp);/g, (_, n) => HTML_FRACTIONS[n]).trim();
   let s = raw.replace(/^[-•*·]\s*/, '').trim();
   const res = { name: s };
   let qty = null;
@@ -311,8 +314,17 @@ export function ingredientsToText(ingredients = []) {
  * copier-coller (« 120°C//vitesse . »). On remet Ⓡ (sens inverse) et Ⓢ
  * (vitesse mijotage), seuls réglages affichés en icône.
  */
+// Icône copiée depuis le site (police d'icônes) : caractère privé, ou carré de remplacement.
+const ICON = '[\\uE000-\\uF8FF\\u2261-\\u2263\\u25A1\\uFFFD]';
+const ICON_RE = new RegExp(ICON, 'g');
+const REVERSE_ICON = new RegExp(`/\\s*${ICON}\\s*/\\s*(vitesse|vit\\.)`, 'gi');
+const STIR_ICON = new RegExp(`\\b(vitesse|vit\\.)\\s*${ICON}`, 'gi');
+
 export function fixThermomixIcons(text) {
   return String(text)
+    .replace(REVERSE_ICON, '/Ⓡ/$1')
+    .replace(STIR_ICON, 'vitesse Ⓢ')
+    .replace(ICON_RE, '')
     .replace(/\/\s*\/\s*(vitesse|vit\.)/gi, '/Ⓡ/$1')
     .replace(/\bvitesse\s*(?=[.,;)]|$)/gi, 'vitesse Ⓢ');
 }
