@@ -9,6 +9,7 @@ import { h, setChildren, vibrate } from '../dom.js';
 import { icon } from '../icons.js';
 import { photoCache, planSheet } from './recipe.js';
 import { recipeThumb, stars } from './recipes.js';
+import { bookmarkButton } from './selection.js';
 
 const KEY = 'omq.ideaFilters';
 const CATS = [
@@ -132,6 +133,7 @@ export function ideaView() {
       h('div', { class: 'row gap' },
         h('button', { class: 'btn ghost grow', onclick: () => planSheet(r) }, icon('calendar', 18), 'Planifier'),
         h('a', { class: 'btn ghost grow', href: `#/recette/${r.id}` }, icon('book', 18), 'Voir la recette')),
+      bookmarkButton(r, { labels: { off: 'Garder pour plus tard', on: 'Dans mes envies' } }),
       alternatives.length > 0 && h('section', { class: 'stack tight' },
         h('h3', { class: 'idea-alt-title' }, 'Ou bien…'),
         h('div', { class: 'recipe-list flush' }, alternatives.map((a) => h('a', { class: 'recipe-row', href: `#/recette/${a.recipe.id}` },

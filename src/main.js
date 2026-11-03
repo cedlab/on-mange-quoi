@@ -14,6 +14,7 @@ import { findUrl, linkImportView, proxySettingsView } from './ui/views/link-impo
 import { statsView } from './ui/views/stats.js';
 import { membersView, moreView, settingsView, sortView, trashView } from './ui/views/more.js';
 import { weekView } from './ui/views/week.js';
+import { selectionView } from './ui/views/selection.js';
 
 initTheme();
 registerServiceWorker();
@@ -43,6 +44,7 @@ route('/corbeille', trashView, { tab: 'more', live: true });
 route('/semaine', weekView, { tab: 'week' });
 route('/reglages', settingsView, { tab: 'more' });
 route('/stats', statsView, { tab: 'stats' });
+route('/envies', selectionView, { tab: 'selection' });
 
 function isDemo() {
   try {

@@ -42,6 +42,7 @@ export class Store {
     this.plans = {};
     this.plansLoaded = false;
     this.settings = { ...DEFAULT_SETTINGS };
+    this.selection = [];
   }
 
   subscribe(fn) {
@@ -109,6 +110,10 @@ export class Store {
     };
     const b = this.backend;
     const stops = [
+      b.watchCol('selection', (list) => {
+        this.selection = list.sort((x, y) => (y.addedAt || 0) - (x.addedAt || 0));
+        this.emit('selection');
+      }, onError),
       b.watchCol('plans', (list) => {
         this.plans = Object.fromEntries(list.map((p) => [p.id, p]));
         this.plansLoaded = true;
@@ -213,6 +218,40 @@ export class Store {
       byWeek.get(w)[d] = Object.fromEntries(SLOTS.map((s) => [s.id, []]));
     }
     await this.backend.writeOps([...byWeek.entries()].map(([w, days]) => ({ op: 'set', path: `plans/${w}`, data: { days }, merge: true })));
+  }
+
+  // --- Mes envies (recettes et idées « à faire un de ces jours ») ------------
+
+  isSelected(recipeId) {
+    return this.selection.some((i) => i.recipeId === recipeId);
+  }
+
+  #who() {
+    return { addedAt: Date.now(), addedBy: this.user?.email || null, addedByName: (this.user?.name || '').split(' ')[0] || null };
+  }
+
+  /** Ajoute ou retire une recette de la sélection ; renvoie true si elle y est désormais. */
+  async toggleSelection(recipe) {
+    if (this.isSelected(recipe.id)) {
+      await this.backend.del(`selection/${recipe.id}`);
+      return false;
+    }
+    await this.backend.put(`selection/${recipe.id}`, { recipeId: recipe.id, title: recipe.title, ...this.#who() });
+    return true;
+  }
+
+  addSelectionText(text) {
+    return this.backend.put(`selection/${this.backend.newDocId('selection')}`, { text: text.trim(), ...this.#who() });
+  }
+
+  removeSelection(id) {
+    return this.backend.del(`selection/${id}`);
+  }
+
+  /** Remet un élément retiré (bouton « Annuler »). */
+  restoreSelection(item) {
+    const { id, updatedAt, updatedBy, ...data } = item;
+    return this.backend.put(`selection/${id}`, data);
   }
 
   saveSettings(patch) {

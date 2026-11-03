@@ -8,6 +8,7 @@ import { emptyState, header, segmented, sheet } from '../components.js';
 import { h, plural, setChildren } from '../dom.js';
 import { icon } from '../icons.js';
 import { newRecipeMenu } from './paste.js';
+import { bookmarkButton } from './selection.js';
 
 const KEY = 'omq.recipeFilters';
 const PAGE = 60;
@@ -53,7 +54,8 @@ function card(r) {
       h('span', { class: 'recipe-row-meta' },
         c && h('span', null, c.label),
         t && h('span', null, '⏱ ', formatMinutes(t)),
-        stars(r.rating, 12))));
+        stars(r.rating, 12))),
+    bookmarkButton(r, { className: 'row-end' }));
 }
 
 function activeFilterCount() {
