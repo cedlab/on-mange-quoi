@@ -1,6 +1,7 @@
 // « On mange quoi ? » : tirage d'une recette au hasard, mais pas n'importe
 // comment — de saison, pas mangée récemment, plutôt bien notée.
 // Logique pure (le hasard est injectable pour les tests).
+import { isThermomix } from './sources.js';
 import { addDays } from './dates.js';
 import { ingredientKey } from './aisles.js';
 import { normalizeText, totalMinutes } from './recipes.js';
@@ -154,7 +155,7 @@ export function candidates(recipes, filters = {}) {
       if (!t || t > 30) return false;
     }
     if (filters.wellRated && (r.rating || 0) < 4) return false;
-    if (filters.thermomix && !(r.tags || []).includes('thermomix') && r.source?.type !== 'cookidoo') return false;
+    if (filters.thermomix && !isThermomix(r)) return false;
     return true;
   });
 }

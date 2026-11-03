@@ -14,6 +14,7 @@ const TITLE_LABEL = {
   pdf: ['Nom du PDF', 'Mes recettes de Noël'],
   web: ['Nom du site', 'Marmiton'],
   cookidoo: ['Nom (facultatif)', 'Cookidoo'],
+  quitoque: ['Nom (facultatif)', 'Quitoque'],
   chronodrive: ['Nom (facultatif)', 'Chronodrive'],
   magazine: ['Nom du magazine', 'Maxi Cuisine'],
   perso: ['De qui vient la recette ?', 'Mamie, Nadine, moi…'],

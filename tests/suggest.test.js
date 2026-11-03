@@ -61,7 +61,7 @@ describe('tirage', () => {
   const recipes = [
     R('1', 'Soupe de potiron', ['potiron', 'poireau'], { category: 'plat', rating: 4, prepMin: 20 }),
     R('2', 'Salade de tomates', ['tomates'], { category: 'entree', prepMin: 10 }),
-    R('3', 'Blanquette', ['veau', 'champignons'], { category: 'plat', prepMin: 30, cookMin: 90, tags: ['thermomix'] }),
+    R('3', 'Blanquette', ['veau', 'champignons'], { category: 'plat', prepMin: 30, cookMin: 90, steps: [{ text: 'Cuire 90 min/98°C/Ⓡ/vitesse Ⓢ.' }] }),
     R('4', 'Mousse au chocolat', ['chocolat'], { category: 'dessert', rating: 2 }),
     R('5', 'Supprimée', [], { deleted: true }),
   ];

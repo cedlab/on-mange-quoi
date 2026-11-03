@@ -185,7 +185,8 @@ https://cookidoo.fr/recipes/recipe/fr-FR/r130599`;
     ]);
     expect(r.notes).toBe('Accessoires : Moule à tarte');
     expect(r.source).toEqual({ type: 'cookidoo', title: 'Cookidoo', url: 'https://cookidoo.fr/recipes/recipe/fr-FR/r130599' });
-    expect(r.tags).toEqual(['thermomix']);
+    expect(r.tags).toBeUndefined(); // Thermomix : c'est la source (Cookidoo), plus un tag
+    expect(r.source.type).toBe('cookidoo');
   });
 
   it('ne prend pas un ingrédient sans quantité pour un sous-titre', () => {
