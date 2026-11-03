@@ -2,7 +2,7 @@
   "id": "./",
   "name": "On mange quoi ?",
   "short_name": "On mange quoi",
-  "description": "Recettes, planning des repas, liste de courses et placards de la famille.",
+  "description": "Recettes et planning des repas de la famille.",
   "lang": "fr",
   "dir": "ltr",
   "start_url": "./",

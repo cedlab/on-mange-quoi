@@ -1,6 +1,6 @@
 # 🍽️ On mange quoi ?
 
-L'application de la famille pour les recettes, les menus de la semaine et les courses, sur iPhone et Android.
+L'application de la famille pour les recettes et les menus de la semaine, sur iPhone et Android.
 C'est une application web installable (PWA) : elle s'ouvre en plein écran et fonctionne même sans réseau.
 
 👉 **https://cedlab.github.io/on-mange-quoi/**
@@ -38,18 +38,11 @@ C'est une application web installable (PWA) : elle s'ouvre en plein écran et fo
   - Ajouter un repas : toucher un créneau, puis choisir une recette (recherche, recettes souvent au menu, mieux notées) ou un texte libre (« Restes », « Cantine »…), avec le nombre de portions.
   - Poupette : bouton « Même chose que les grands ».
   - Vue **compacte** par défaut : la date dans un rond et seuls les repas prévus, pour voir toute la semaine sur un écran. Le bouton en haut à gauche bascule vers la vue détaillée (créneau par créneau).
-  - **Texte libre** dans chaque repas (« Raclette chez Paul »), en plus des textes rapides (Restes, Cantine…).
+  - **Texte libre** dans chaque repas (« Raclette chez Paul »), en plus des textes rapides (Restes, Cantine…), avec un bouton 🎤 pour **dicter** (la recherche de recette aussi). Si le navigateur ne sait pas dicter, le bouton n'apparaît pas : le micro du clavier reste disponible.
   - Navigation : semaine par semaine, ou par le calendrier (toucher le titre de la semaine).
-  - Sélection : « Sélectionner » pour choisir des jours ; « Période » pour choisir du … au … sur le calendrier, puis faire les courses, le PDF ou vider ces jours.
+  - Sélection : « Sélectionner » pour choisir des jours ; « Période » pour choisir du … au … sur le calendrier, puis faire le menu PDF ou vider ces jours.
   - Depuis une fiche recette : « Planifier un repas ».
 - **Menu en PDF** : la grille « Planning des repas » (A4 paysage, une page par semaine, lignes Poupette grisées), pour cette semaine, deux semaines ou une période, ou vierge à remplir à la main. Le PDF se partage ou s'imprime depuis le téléphone.
-- **Courses** : liste générée à partir des repas d'une période.
-  - Quantités additionnées et ajustées aux portions prévues.
-  - Rangement par rayon ; un article reclassé à la main est mémorisé.
-  - Les produits de base (sel, huile…) sont regroupés à part.
-  - Cases à cocher en temps réel sur tous les téléphones, ajouts à la main (« 6 œufs »).
-  - « Mettre à jour » après un changement du planning conserve les coches.
-  - « Courses terminées » retire les articles cochés ; la liste se partage en texte.
 - **On mange quoi ? 🎲** (dé en haut à gauche des Recettes) : une recette tirée au hasard, avec une petite animation. Le tirage favorise :
   - la saison : légumes et fruits du mois, plats réconfortants en hiver et frais en été, bûche en décembre, crêpes en février… ;
   - les recettes pas mangées depuis longtemps (rien de ce qui a été au menu ces 3 dernières semaines) ;
@@ -66,9 +59,8 @@ C'est une application web installable (PWA) : elle s'ouvre en plein écran et fo
 
 | Étape | Contenu |
 |---|---|
-| 3 | Placards (« j'en ai / j'en ai plus »), déduction dans les courses, suggestions de recettes |
+| 3 | Placards (« j'en ai / j'en ai plus ») et suggestions de recettes avec ce qu'il y a à la maison |
 | 4 | Lien de lecture seule pour partager une recette à quelqu'un qui n'a pas l'app, PDF ou image d'une recette |
-| 5 | Liens Chronodrive dans la liste de courses |
 
 ## Confidentialité
 
@@ -174,5 +166,4 @@ worker/wrangler.toml     sa configuration (déploiement depuis GitHub, répertoi
 | `recipePhotos/{id}` | la photo, d'environ 100 Ko, chargée à l'ouverture de la fiche |
 | `config/access` | `{ members: [...] }`, la liste des adresses autorisées |
 | `plans/{samedi}` | une semaine : `{ days: { "2026-11-07": { midi: [...], midiP: [...], soir: [...], soirP: [...] } } }` |
-| `shoppingItems/{id}` | un article de la liste de courses (coché ou non) |
-| `config/settings`, `config/aisles`, `config/shopping` | réglages du planning, rayons choisis à la main, période de la liste |
+| `config/settings` | réglages du planning et adresse du relais d'import |

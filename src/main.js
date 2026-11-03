@@ -14,7 +14,6 @@ import { findUrl, linkImportView, proxySettingsView } from './ui/views/link-impo
 import { statsView } from './ui/views/stats.js';
 import { comingSoonView, membersView, moreView, settingsView, sortView, trashView } from './ui/views/more.js';
 import { weekView } from './ui/views/week.js';
-import { shoppingView } from './ui/views/shopping.js';
 
 initTheme();
 registerServiceWorker();
@@ -42,7 +41,6 @@ route('/plus', moreView, { tab: 'more', live: true });
 route('/membres', membersView, { tab: 'more' });
 route('/corbeille', trashView, { tab: 'more', live: true });
 route('/semaine', weekView, { tab: 'week' });
-route('/courses', shoppingView, { tab: 'shopping' });
 route('/reglages', settingsView, { tab: 'more' });
 route('/stats', statsView, { tab: 'stats' });
 route('/placards', comingSoonView('Placards', '🧺', 'Ce que tu as à la maison, et des idées de recettes avec.', 3), { tab: 'pantry' });

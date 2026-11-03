@@ -50,7 +50,6 @@ function parse() {
 const TABS = [
   { id: 'week', href: '#/semaine', label: 'Semaine', icon: 'calendar' },
   { id: 'recipes', href: '#/', label: 'Recettes', icon: 'book' },
-  { id: 'shopping', href: '#/courses', label: 'Courses', icon: 'cart' },
   { id: 'pantry', href: '#/placards', label: 'Placards', icon: 'fridge' },
   { id: 'stats', href: '#/stats', label: 'Stats', icon: 'chart' },
   { id: 'more', href: '#/plus', label: 'Plus', icon: 'more' },
