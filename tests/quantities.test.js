@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   factorForIngredient, factorForServings, formatNumber, formatQuantity, formatServings,
-  ingredientsToText, ingredientToLine, parseIngredientLine, parseIngredientsText, parseStepsText, roundQty, stepsToText,
+  ingredientsToText, ingredientToLine, parseIngredientLine, parseIngredientsText, parseStepsText, roundQty, stepsToText, fixThermomixIcons,
 } from '../src/logic/quantities.js';
 
 describe('parseIngredientLine', () => {
@@ -90,5 +90,25 @@ describe('texte du formulaire', () => {
     const steps = parseStepsText('# Étape 1 : la pâte\n1. Mélanger\n\n2) Cuire 20 min');
     expect(steps).toEqual([{ section: 'Étape 1 : la pâte' }, { text: 'Mélanger' }, { text: 'Cuire 20 min' }]);
     expect(stepsToText(steps)).toBe('# Étape 1 : la pâte\nMélanger\nCuire 20 min');
+  });
+});
+
+describe('étapes copiées depuis Cookidoo', () => {
+  it('ignore « Préparation » et les numéros seuls, remet les icônes Thermomix', () => {
+    const steps = parseStepsText([
+      'Préparation', '', '1. Mixer 5 sec/vitesse 5.', '2. Faire revenir 5 min/120°C/vitesse .',
+      '3', 'Réduire 10 min/100°C//vitesse .', '4. Cuire 20 min/100°C//vitesse 1. Servir chaud.', 'Astuces', 'Servir avec des pâtes.',
+    ].join('\n'));
+    expect(steps).toEqual([
+      { text: 'Mixer 5 sec/vitesse 5.' },
+      { text: 'Faire revenir 5 min/120°C/vitesse Ⓢ.' },
+      { text: 'Réduire 10 min/100°C/Ⓡ/vitesse Ⓢ.' },
+      { text: 'Cuire 20 min/100°C/Ⓡ/vitesse 1. Servir chaud.' },
+      { section: 'Astuces' },
+      { text: 'Servir avec des pâtes.' },
+    ]);
+  });
+  it('ne touche pas aux réglages complets', () => {
+    expect(fixThermomixIcons('3 min/100°C/Ⓡ/vitesse Ⓢ. Puis vitesse 4.')).toBe('3 min/100°C/Ⓡ/vitesse Ⓢ. Puis vitesse 4.');
   });
 });

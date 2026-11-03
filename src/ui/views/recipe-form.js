@@ -87,6 +87,24 @@ export function recipeFormView({ id } = {}, query = {}) {
   ingredients.value = ingredientsToText(r.ingredients);
   const steps = h('textarea', { class: 'input', rows: 9, placeholder: 'Préchauffer le four à 180 °C.\nMélanger la farine et les œufs.\n# Pour la sauce\nFaire chauffer la crème.' });
   steps.value = stepsToText(r.steps);
+  // Coller les étapes copiées ailleurs (Cookidoo connecté…) d'un seul geste.
+  const pasteSteps = navigator.clipboard?.readText && h('button', {
+    class: 'btn small ghost', type: 'button', onclick: async () => {
+      try {
+        const t = (await navigator.clipboard.readText()).trim();
+        if (!t) {
+          toast('Le presse-papiers est vide : copie d’abord les étapes.');
+          return;
+        }
+        steps.value = stepsToText(parseStepsText(steps.value.trim() ? `${steps.value}\n${t}` : t));
+        toast(`${parseStepsText(steps.value).filter((x) => x.text).length} étapes.`);
+      } catch {
+        steps.focus();
+        toast('Touche longuement le champ « Étapes » puis « Coller ».');
+      }
+    },
+  }, '📋 Coller les étapes');
+  const noSteps = !r.steps?.some((x) => x.text);
   const notes = h('textarea', { class: 'input', rows: 3, placeholder: 'Astuces, variantes, accord…' });
   notes.value = r.notes || '';
   const tags = h('input', { class: 'input', value: (r.tags || []).join(', '), placeholder: 'rapide, végétarien, Noël…', autocomplete: 'off' });
@@ -174,7 +192,9 @@ export function recipeFormView({ id } = {}, query = {}) {
       fromDraft && h('div', { class: 'card notice' },
         h('strong', null, r.source?.url && !r.fromText ? `✨ Recette importée de ${r.source.title || 'la page'}` : '✨ Recette détectée'),
         r.fromText && h('p', { class: 'small' }, 'Le site ne fournit pas la recette sous forme structurée : elle a été reconstituée à partir du texte de la page, vérifie-la bien.'),
-        h('p', { class: 'small' }, `${r.ingredients.length} ingrédient${r.ingredients.length > 1 ? 's' : ''} et ${r.steps.filter((x) => x.text).length} étape${r.steps.length > 1 ? 's' : ''} reconnus. Vérifie, complète (source, catégorie, photo…) puis enregistre.`)),
+        h('p', { class: 'small' }, `${r.ingredients.length} ingrédient${r.ingredients.length > 1 ? 's' : ''} et ${r.steps.filter((x) => x.text).length} étape${r.steps.length > 1 ? 's' : ''} reconnus. Vérifie, complète (source, catégorie, photo…) puis enregistre.`),
+        noSteps && r.source?.type === 'cookidoo' && h('p', { class: 'small' }, h('strong', null, 'Étapes : '),
+          'Cookidoo ne les montre qu’aux abonnés connectés. Ouvre la recette sur cookidoo.fr (connecté), sélectionne les étapes de la première à la dernière, copie, puis touche « 📋 Coller les étapes » plus bas.')),
       photoBox,
       field('Titre *', title),
       h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Catégorie'), catBox),
@@ -182,7 +202,10 @@ export function recipeFormView({ id } = {}, query = {}) {
       h('div', { class: 'grid-2' }, field('Portions', servings), field('Unité', servingsLabel, 'personnes, parts, pièces…')),
       h('div', { class: 'grid-3' }, field('Préparation (min)', prep), field('Cuisson (min)', cook), field('Repos (min)', rest)),
       field('Ingrédients', ingredients, 'Un par ligne, avec la quantité : « 200 g de farine ». Une ligne finissant par « : » crée un groupe (« Pour la sauce : »).'),
-      field('Étapes', steps, 'Une étape par ligne. « # Titre » pour une partie (« # La pâte »).'),
+      h('div', { class: 'field' },
+        h('div', { class: 'field-label row gap' }, h('span', { class: 'grow' }, 'Étapes'), pasteSteps),
+        steps,
+        h('small', { class: 'muted' }, 'Une étape par ligne. « # Titre » pour une partie (« # La pâte »). Les numéros seuls (« 1 », « 2 »…) sont ignorés.')),
       field('Notes', notes),
       field('Tags', tags, 'Séparés par des virgules.'),
       h('div', { class: 'sticky-actions' }, saveBtn)));

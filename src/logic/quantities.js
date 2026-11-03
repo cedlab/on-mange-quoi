@@ -306,15 +306,34 @@ export function ingredientsToText(ingredients = []) {
   return lines.join('\n');
 }
 
-/** Étapes : une par ligne (ou paragraphe) ; « # Titre » pour une section. */
+/**
+ * Réglages Thermomix copiés depuis Cookidoo : les icônes disparaissent au
+ * copier-coller (« 120°C//vitesse . »). On remet Ⓡ (sens inverse) et Ⓢ
+ * (vitesse mijotage), seuls réglages affichés en icône.
+ */
+export function fixThermomixIcons(text) {
+  return String(text)
+    .replace(/\/\s*\/\s*(vitesse|vit\.)/gi, '/Ⓡ/$1')
+    .replace(/\bvitesse\s*(?=[.,;)]|$)/gi, 'vitesse Ⓢ');
+}
+
+const STEP_NUMBER = /^(?:(?:[ée]tape|step)\s*)?\d{1,2}\s*[.):]?$/i;
+const STEPS_TITLE = /^(?:pr[ée]paration|[ée]tapes?(?:\s+de\s+(?:la\s+)?(?:pr[ée]paration|recette))?|instructions?)\s*:?$/i;
+const TIPS_TITLE = /^(astuces?|conseils?|variantes?)\s*:?$/i;
+
+/**
+ * Étapes : une par ligne (ou paragraphe) ; « # Titre » pour une section.
+ * Accepte aussi les étapes copiées d'un site (Cookidoo…) : numéros seuls sur
+ * leur ligne et titre « Préparation » ignorés, « Astuces » devient une partie.
+ */
 export function parseStepsText(text) {
   const out = [];
   for (const line of String(text || '').split(/\r?\n/)) {
-    const t = line.trim();
-    if (!t) continue;
-    const sec = t.match(/^#+\s*(.+)$/);
-    if (sec) out.push({ section: sec[1].trim() });
-    else out.push({ text: t.replace(/^\d+\s*[.)]\s+/, '') });
+    const t = line.replace(/\u00a0/g, ' ').trim();
+    if (!t || STEP_NUMBER.test(t) || STEPS_TITLE.test(t)) continue;
+    const sec = t.match(/^#+\s*(.+)$/) || t.match(TIPS_TITLE);
+    if (sec) out.push({ section: sec[1].trim().replace(/^./, (c) => c.toUpperCase()) });
+    else out.push({ text: fixThermomixIcons(t.replace(/^(?:(?:[ée]tape|step)\s*)?\d{1,2}\s*(?:[.):]|\s-)\s+/i, '')) });
   }
   return out;
 }
