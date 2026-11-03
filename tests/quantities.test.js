@@ -112,3 +112,14 @@ describe('étapes copiées depuis Cookidoo', () => {
     expect(fixThermomixIcons('3 min/100°C/Ⓡ/vitesse Ⓢ. Puis vitesse 4.')).toBe('3 min/100°C/Ⓡ/vitesse Ⓢ. Puis vitesse 4.');
   });
 });
+
+describe('icônes Thermomix copiées depuis un ordinateur', () => {
+  it('reconnaît les caractères d’icône (sens inverse, mijotage)', () => {
+    expect(fixThermomixIcons('Faire revenir 5 min/120°C/vitesse .')).toBe('Faire revenir 5 min/120°C/vitesse Ⓢ.');
+    expect(fixThermomixIcons('Réduire 10 min/100°C//vitesse .')).toBe('Réduire 10 min/100°C/Ⓡ/vitesse Ⓢ.');
+    expect(fixThermomixIcons('Cuire 20 min/100°C/≣/vitesse 1.')).toBe('Cuire 20 min/100°C/Ⓡ/vitesse 1.');
+  });
+  it('décode les fractions HTML des ingrédients', () => {
+    expect(parseIngredientLine('&frac12; c. à café de sel')).toMatchObject({ qty: 0.5, unit: 'c. à c.', name: 'sel' });
+  });
+});
