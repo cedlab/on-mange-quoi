@@ -12,6 +12,7 @@ import { h, plural, setChildren } from '../dom.js';
 import { icon } from '../icons.js';
 import { recipeThumb } from './recipes.js';
 import { micButton } from '../voice.js';
+import { plannedFromSelection, selectionLabel } from './selection.js';
 
 let currentWeek = null;
 const VIEW_KEY = 'omq.weekView';
@@ -111,6 +112,24 @@ export function openSlot(date, slotId) {
   };
   const addRecipe = (r) => save([...entries, { recipeId: r.id, title: r.title, servings: defaultServings(slotId) }]);
   const addText = (text) => text && save([...entries, { text }]);
+  // Depuis Ma sélection : ajouté au repas, et retiré de la sélection (avec « Garder »).
+  const addFromSelection = async (item) => {
+    const r = item.recipeId ? store.recipe(item.recipeId) : null;
+    await save([...entries, r ? { recipeId: r.id, title: r.title, servings: defaultServings(slotId) } : { text: item.text }]);
+    await plannedFromSelection(item, `${dayName(date)} ${dayNumber(date)}, ${slot.label.toLowerCase()}`);
+    draw();
+  };
+  const selectionRow = () => {
+    const items = store.selection.filter((i) => i.text || (store.recipe(i.recipeId) && !store.recipe(i.recipeId).deleted));
+    return items.length > 0 && h('div', { class: 'stack tight' },
+      h('span', { class: 'field-label' }, '🔖 Ma sélection'),
+      h('div', { class: 'sel-strip' }, items.map((i) => {
+        const r = i.recipeId ? store.recipe(i.recipeId) : null;
+        return h('button', { class: 'sel-chip', onclick: () => addFromSelection(i) },
+          r ? recipeThumb(r, 32) : h('span', { class: 'thumb thumb-empty', style: { width: '32px', height: '32px' } }, '✏️'),
+          h('span', null, selectionLabel(i)), icon('plus', 16));
+      })));
+  };
 
   // Idée au hasard (de saison, pas mangée récemment) adaptée au créneau.
   const ideaSeen = [];
@@ -208,6 +227,7 @@ export function openSlot(date, slotId) {
       slot.child && family.length > 0 && h('button', {
         class: 'btn ghost', onclick: () => save([...entries, ...family.map((e) => ({ ...e, servings: store.settings.childServings }))]),
       }, '👧 Même chose que les grands'),
+      selectionRow(),
       freeForm,
       h('div', { class: 'chips' }, QUICK_TEXTS.map((t) => h('button', { class: 'chip-select', onclick: () => addText(t) }, t))),
       ideaRow(),

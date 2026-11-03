@@ -96,3 +96,31 @@ describe('planning', () => {
     expect(store.settings).toMatchObject({ familyServings: 3, childServings: 1 });
   });
 });
+
+describe('Ma sélection', () => {
+  it('ajoute, retire, remet une recette et garde les idées écrites', async () => {
+    const store = await signedIn('a@b.fr', ['a@b.fr']);
+    const id = await store.saveRecipe(null, { title: 'Lasagnes', source: { type: 'perso', title: 'Moi' } });
+    await tick();
+    expect(await store.toggleSelection(store.recipe(id))).toBe(true);
+    await store.addSelectionText('  Crêpes party ');
+    await tick();
+    expect(store.isSelected(id)).toBe(true);
+    expect(store.selection).toHaveLength(2);
+    const rec = store.selection.find((i) => i.recipeId === id);
+    expect(rec).toMatchObject({ id, title: 'Lasagnes', addedBy: 'a@b.fr', addedByName: 'Démo' });
+    expect(store.selection.find((i) => i.text)).toMatchObject({ text: 'Crêpes party' });
+    // Deuxième appui : retirée.
+    expect(await store.toggleSelection(store.recipe(id))).toBe(false);
+    await tick();
+    expect(store.isSelected(id)).toBe(false);
+    // « Annuler » : remise telle quelle, avec sa date d'ajout.
+    await store.restoreSelection(rec);
+    await tick();
+    expect(store.selection.find((i) => i.id === id)).toMatchObject({ addedAt: rec.addedAt, addedByName: 'Démo' });
+    const text = store.selection.find((i) => i.text);
+    await store.removeSelection(text.id);
+    await tick();
+    expect(store.selection.map((i) => i.id)).toEqual([id]);
+  });
+});
