@@ -316,7 +316,6 @@ export function ingredientsToText(ingredients = []) {
  */
 // Icône copiée depuis le site (police d'icônes) : caractère privé, ou carré de remplacement.
 const ICON = '[\\uE000-\\uF8FF\\u2261-\\u2263\\u25A1\\uFFFD]';
-const ICON_RE = new RegExp(ICON, 'g');
 const REVERSE_ICON = new RegExp(`/\\s*${ICON}\\s*/\\s*(vitesse|vit\\.)`, 'gi');
 const STIR_ICON = new RegExp(`\\b(vitesse|vit\\.)\\s*${ICON}`, 'gi');
 
@@ -324,7 +323,9 @@ export function fixThermomixIcons(text) {
   return String(text)
     .replace(REVERSE_ICON, '/Ⓡ/$1')
     .replace(STIR_ICON, 'vitesse Ⓢ')
-    .replace(ICON_RE, '')
+    // Autres icônes (celle d'un mode, après « Cuisson du sucre »…) : le nom suffit.
+    .replace(new RegExp(`\\s*${ICON}+(?=\\s*[.,;:)!?]|$)`, 'g'), '')
+    .replace(new RegExp(`\\s*${ICON}+\\s*`, 'g'), ' ')
     .replace(/\/\s*\/\s*(vitesse|vit\.)/gi, '/Ⓡ/$1')
     .replace(/\bvitesse\s*(?=[.,;)]|$)/gi, 'vitesse Ⓢ');
 }

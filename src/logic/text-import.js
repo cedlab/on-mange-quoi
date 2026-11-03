@@ -23,7 +23,7 @@ const HEADERS = [
 const NOISE = /^(?:tr[eè]s\s+facile|facile|moyen(?:ne)?|difficile|interm[ée]diaire|avanc[ée])$|^(?:difficult[ée]|niveau|co[uû]t|budget)\b|^\d+(?:[.,]\d+)?\s*(?:\/\s*5)?\s*\(?\s*\d*\s*(?:avis|[ée]valuations?|notes?|votes?)\s*\)?$|\b\d+\s*(?:k?cal|kj)\b|^(?:prot[ée]ines|glucides|lipides|fibres|calories|sodium|graisses|acides\s+gras|sel)\s*:?\s*\d/i;
 
 /** Réglages Thermomix dans le texte des étapes : « 10 sec/vitesse 6 », « 3 min/100°C/Ⓡ/vitesse Ⓢ ». */
-export const TM_SETTING = /(?:\d+(?:[.,]\d+)?\s*(?:sec|min|h)(?:\s*\d+\s*(?:sec|min))?\s*\/\s*)?(?:(?:\d+\s*°C?|Varoma)\s*\/\s*)?(?:Ⓡ\s*\/\s*|sens\s+inverse\s*\/\s*)?(?:vitesse|vit\.)\s*(?:\d+(?:[.,]\d+)?|Ⓢ|mijotage|turbo|cuill[eè]re)|\bturbo\s*\/\s*\d+(?:[.,]\d+)?\s*sec\b|\bmode\s+(?:p[ée]trin|[ée]paississement|turbo|cuisson\s+lente|sous[- ]vide|fermentation|rissoler)\b/gi;
+export const TM_SETTING = /(?:\d+(?:[.,]\d+)?\s*(?:sec|min|h)(?:\s*\d+\s*(?:sec|min))?\s*\/\s*)?(?:(?:\d+\s*°C?|Varoma)\s*\/\s*)?(?:Ⓡ\s*\/\s*|sens\s+inverse\s*\/\s*)?(?:vitesse|vit\.)\s*(?:\d+(?:[.,]\d+)?|Ⓢ|mijotage|turbo|cuill[eè]re)|\bturbo\s*\/\s*\d+(?:[.,]\d+)?\s*sec\b|\b(?:mode\s+)?(?:cuisson\s+du\s+sucre|cuisson\s+lente|sous[- ]vide|[ée]paississement)\b(?:\s*\/\s*\d+\s*°C)?|\bmode\s+(?:p[ée]trin|turbo|fermentation|rissoler)\b/gi;
 
 const DURATION = '(\\d+\\s*(?:h|heures?)\\s*(?:\\d+\\s*(?:min(?:utes?)?|mn)?)?|\\d+\\s*(?:min(?:utes?)?|mn))';
 const TIME_RE = new RegExp(

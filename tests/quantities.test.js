@@ -123,3 +123,15 @@ describe('icônes Thermomix copiées depuis un ordinateur', () => {
     expect(parseIngredientLine('&frac12; c. à café de sel')).toMatchObject({ qty: 0.5, unit: 'c. à c.', name: 'sel' });
   });
 });
+
+describe('icône d’un mode Thermomix', () => {
+  it('retire l’icône sans laisser d’espace avant la virgule', () => {
+    expect(fixThermomixIcons('Cuisson du sucre , sans le gobelet doseur.')).toBe('Cuisson du sucre, sans le gobelet doseur.');
+    expect(fixThermomixIcons('Mode  pétrin 2 min.')).toBe('Mode pétrin 2 min.');
+  });
+  it('met en évidence « Cuisson du sucre »', async () => {
+    const { TM_SETTING } = await import('../src/logic/text-import.js');
+    expect('Cuisson du sucre, sans le gobelet doseur.'.match(new RegExp(TM_SETTING.source, 'gi'))).toEqual(['Cuisson du sucre']);
+    expect('Bien mélanger le sucre.'.match(new RegExp(TM_SETTING.source, 'gi'))).toBeNull();
+  });
+});
