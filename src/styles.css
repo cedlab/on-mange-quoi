@@ -2222,9 +2222,6 @@ code {
   border-radius: 50%;
   object-fit: cover;
 }
-.cday-meal.free {
-  font-style: italic;
-}
 .cday-empty {
   flex: 1;
   padding: 14px 0;

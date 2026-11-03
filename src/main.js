@@ -12,7 +12,7 @@ import { pasteView } from './ui/views/paste.js';
 import { ideaView } from './ui/views/idea.js';
 import { findUrl, linkImportView, proxySettingsView } from './ui/views/link-import.js';
 import { statsView } from './ui/views/stats.js';
-import { comingSoonView, membersView, moreView, settingsView, sortView, trashView } from './ui/views/more.js';
+import { membersView, moreView, settingsView, sortView, trashView } from './ui/views/more.js';
 import { weekView } from './ui/views/week.js';
 
 initTheme();
@@ -43,7 +43,6 @@ route('/corbeille', trashView, { tab: 'more', live: true });
 route('/semaine', weekView, { tab: 'week' });
 route('/reglages', settingsView, { tab: 'more' });
 route('/stats', statsView, { tab: 'stats' });
-route('/placards', comingSoonView('Placards', '🧺', 'Ce que tu as à la maison, et des idées de recettes avec.', 3), { tab: 'pantry' });
 
 function isDemo() {
   try {

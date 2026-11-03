@@ -59,7 +59,7 @@ C'est une application web installable (PWA) : elle s'ouvre en plein écran et fo
 
 | Étape | Contenu |
 |---|---|
-| 3 | Placards (« j'en ai / j'en ai plus ») et suggestions de recettes avec ce qu'il y a à la maison |
+| 3 | Placards (« j'en ai / j'en ai plus ») et suggestions de recettes avec ce qu'il y a à la maison — mis de côté pour l'instant |
 | 4 | Lien de lecture seule pour partager une recette à quelqu'un qui n'a pas l'app, PDF ou image d'une recette |
 
 ## Confidentialité
