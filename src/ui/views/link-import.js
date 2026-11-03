@@ -127,7 +127,7 @@ export function linkImportView(_, query = {}) {
         btn),
       status,
       h('p', { class: 'small muted pad-x' },
-        'Chronodrive : Partager → Copier le lien. Fonctionne aussi avec Marmiton, 750g, CuisineAZ et la plupart des sites de recettes. Pas avec Cookidoo (connexion obligatoire) : pour Cookidoo, utilise « Coller un texte ».'));
+        'Chronodrive : Partager → Copier le lien. Fonctionne aussi avec Marmiton, 750g, CuisineAZ et la plupart des sites de recettes. Cookidoo : le titre, la photo et les ingrédients sont importés ; les étapes, réservées aux abonnés connectés, se copient-collent ensuite depuis cookidoo.fr.'));
 
   // Lien reçu par le partage (Android) : import direct.
   if (proxy && findUrl(query.url || query.text) && query.auto !== '0') setTimeout(() => run(), 50);

@@ -126,7 +126,7 @@ export function draftFromPage(page) {
       ingredients: parseIngredientsText(ing.join('\n')),
       steps: steps(r.recipeInstructions),
       source,
-      tags: [],
+      tags: type === 'cookidoo' ? ['thermomix'] : [],
     };
     const prep = isoMinutes(r.prepTime);
     const cook = isoMinutes(r.cookTime);

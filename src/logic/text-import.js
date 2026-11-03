@@ -4,7 +4,7 @@
 // Le texte peut avoir des titres de parties (« Ingrédients », « Préparation »…)
 // ou non : chaque ligne est alors classée d'après sa forme (quantité en tête,
 // phrase longue, numéro d'étape…).
-import { parseIngredientLine, parseIngredientsText } from './quantities.js';
+import { fixThermomixIcons, parseIngredientLine, parseIngredientsText } from './quantities.js';
 import { detectSourceType, normalizeUrl } from './sources.js';
 
 const BULLET = /^\s*(?:[-–—•*·▪◦●○▢☐✓✔→>]+|\(\s*\)|\[\s*[xX ]?\s*\])\s*/;
@@ -151,7 +151,7 @@ export function parseRecipeText(text) {
 
   const addStep = (line) => {
     const numbered = NUMBERED.test(line);
-    const t = line.replace(BULLET, '').replace(NUMBERED, '').trim();
+    const t = fixThermomixIcons(line.replace(BULLET, '').replace(NUMBERED, '').trim());
     if (!t) return;
     // Petit titre de partie : « Pour la pâte : », « La sauce : »
     if (/:\s*$/.test(t) && t.split(/\s+/).length <= 6) {
