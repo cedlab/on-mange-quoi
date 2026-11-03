@@ -29,6 +29,7 @@ C'est une application web installable (PWA) : elle s'ouvre en plein écran et fo
   - Ne marche pas pour Cookidoo, qui demande une connexion : il reste le copier-coller.
 - **Recettes Cookidoo avec Claude dans Chrome** : voir [docs/import-cookidoo-claude-chrome.md](docs/import-cookidoo-claude-chrome.md). Claude lit les recettes dans ta session Cookidoo et prépare un texte JSON à coller dans Plus → Importer des recettes. Les photos sont récupérées par le relais.
 - **Import** d'un fichier de recettes JSON, ou d'un texte JSON collé (les ingrédients et étapes peuvent être de simples textes ; une photo peut être donnée par son adresse `imageUrl`, téléchargée par le relais) (Plus → Importer des recettes). Les doublons sont repérés.
+- **Livre de recettes en PDF** (Plus → Livre de recettes) : toutes les recettes, classées par catégorie, avec couverture, sommaire cliquable, photo, ingrédients, étapes (réglages Thermomix écrits en clair) et notes, une recette par page. Fabriqué sur le téléphone, puis partagé ou enregistré : une sauvegarde lisible et imprimable.
 - **Sauvegarde** complète en JSON, photos comprises (Plus → Sauvegarder les recettes).
 - **Classement rapide** des recettes par catégorie, une par une (Plus → Classer les recettes).
 - **Corbeille** : une recette supprimée par erreur se restaure.

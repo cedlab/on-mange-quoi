@@ -51,6 +51,75 @@ async function exportBackup(btn) {
   }
 }
 
+/** Dimensions d'une photo (pour la cadrer dans le PDF sans la déformer). */
+function photoSize(data) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve({ data, w: img.naturalWidth, h: img.naturalHeight });
+    img.onerror = () => resolve(null);
+    img.src = data;
+  });
+}
+
+/** Livre de recettes en PDF : toutes les recettes, classées par catégorie. */
+function recipeBookSheet() {
+  let withPhotos = true;
+  const count = store.activeRecipes.length;
+  const status = h('p', { class: 'small muted' });
+  const btn = h('button', { class: 'btn primary big', disabled: !count }, '📖 Créer le livre');
+  const body = h('div', { class: 'stack' },
+    h('p', { class: 'small' }, `Toutes les recettes (${plural(count, 'recette', 'recettes')}), classées par catégorie, avec un sommaire cliquable et une recette par page. Pratique comme sauvegarde à garder ou à imprimer.`),
+    h('label', { class: 'toggle' },
+      h('input', { type: 'checkbox', checked: true, onchange: (e) => { withPhotos = e.target.checked; } }),
+      h('span', { class: 'toggle-ui' }),
+      h('span', { class: 'toggle-text' }, 'Avec les photos', h('small', { class: 'muted' }, ' (fichier plus lourd)'))),
+    btn, status);
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    try {
+      const recipes = store.activeRecipes;
+      const photos = new Map();
+      if (withPhotos) {
+        let i = 0;
+        for (const r of recipes) {
+          status.textContent = `Photos… ${++i}/${recipes.length}`;
+          if (!r.thumb) continue;
+          const data = await store.getPhoto(r.id).catch(() => null);
+          const p = data && /^data:image\/jpe?g/i.test(data) ? await photoSize(data) : null;
+          if (p) photos.set(r.id, p);
+        }
+      }
+      status.textContent = 'Mise en page…';
+      await new Promise((res) => setTimeout(res, 30));
+      const [{ jsPDF }, { buildRecipeBook }] = await Promise.all([import('jspdf'), import('../../logic/recipe-book.js')]);
+      const doc = buildRecipeBook(jsPDF, recipes, { photos });
+      const name = `livre-de-recettes-${new Date().toISOString().slice(0, 10)}.pdf`;
+      const file = new File([doc.output('blob')], name, { type: 'application/pdf' });
+      status.textContent = `${plural(doc.getNumberOfPages(), 'page', 'pages')}, ${Math.max(1, Math.round(file.size / 1e6))} Mo.`;
+      if (navigator.canShare?.({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], title: 'Livre de recettes' });
+          return;
+        } catch (e) {
+          if (e.name === 'AbortError') return;
+        }
+      }
+      const a = h('a', { href: URL.createObjectURL(file), download: name });
+      document.body.append(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 60_000);
+    } catch (e) {
+      console.error(e);
+      status.textContent = '';
+      toast(`PDF impossible : ${e.message}`);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+  sheet(body, { title: 'Livre de recettes (PDF)' });
+}
+
 function installHelp() {
   sheet(h('div', { class: 'stack' },
     isIOS()
@@ -90,6 +159,7 @@ export function moreView() {
       item('#/import-lien', 'link', 'Import par lien', store.settings.importProxy ? 'Relais installé ✅' : 'Installer le relais (Chronodrive, Marmiton…)'),
       item('#/importer', 'upload', 'Importer des recettes', 'Fichier JSON'),
       backupBtn,
+      item(null, 'book', 'Livre de recettes (PDF)', 'Toutes les recettes, à garder ou à imprimer', recipeBookSheet),
       item('#/classer', 'layers', 'Classer les recettes', uncategorized ? `${plural(uncategorized, 'recette', 'recettes')} sans catégorie` : 'Toutes ont une catégorie'),
       item('#/corbeille', 'trash', 'Corbeille', trashCount ? plural(trashCount, 'recette', 'recettes') : 'Vide')),
     h('div', { class: 'card stack' },
