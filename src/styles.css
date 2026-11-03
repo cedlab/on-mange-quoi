@@ -2222,9 +2222,6 @@ code {
   border-radius: 50%;
   object-fit: cover;
 }
-.cday-meal.free {
-  font-style: italic;
-}
 .cday-empty {
   flex: 1;
   padding: 14px 0;
@@ -2279,4 +2276,19 @@ code {
 .slot-sheet .row > .input[type=search] {
   flex: 1;
   min-width: 0;
+}
+
+/* Plat venant de l'onglet Recettes, sans photo */
+.cday-recipe-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--primary) 16%, var(--surface));
+  color: var(--primary-2);
+}
+.meal-emoji .icon {
+  color: var(--primary-2);
 }
