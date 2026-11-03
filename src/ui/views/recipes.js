@@ -3,7 +3,7 @@ import { store } from '../../app.js';
 import {
   allTags, CATEGORIES, category, filterRecipes, formatMinutes, formatRating, starFills, totalMinutes,
 } from '../../logic/recipes.js';
-import { SOURCE_TYPES } from '../../logic/sources.js';
+import { SOURCE_TYPES, sourceType } from '../../logic/sources.js';
 import { emptyState, header, segmented, sheet } from '../components.js';
 import { h, plural, setChildren } from '../dom.js';
 import { icon } from '../icons.js';
@@ -36,6 +36,13 @@ export function recipeThumb(r, size = 64) {
   return h('div', { class: 'thumb thumb-empty', style: { ...style, fontSize: `${Math.round(size * 0.45)}px` }, 'aria-hidden': 'true' }, c?.emoji || '🍽️');
 }
 
+/** Vignette avec un petit rond indiquant la source (🥣 Thermomix, 🥕 Quitoque, 📕 livre…). */
+export function thumbWithSource(r, size = 64) {
+  const t = r.source?.type && r.source.type !== 'autre' ? sourceType(r.source.type) : null;
+  return h('span', { class: 'thumb-wrap' }, recipeThumb(r, size),
+    t && h('span', { class: 'src-badge', title: t.label, role: 'img', 'aria-label': `Source : ${t.label}` }, t.emoji));
+}
+
 /** Étoiles en lecture seule (demi-étoiles comprises). */
 export function stars(rating, size = 14) {
   if (!rating) return null;
@@ -48,7 +55,7 @@ function card(r) {
   const t = totalMinutes(r);
   const c = category(r.category);
   return h('a', { class: 'recipe-row', href: `#/recette/${r.id}` },
-    recipeThumb(r, 64),
+    thumbWithSource(r, 64),
     h('div', { class: 'recipe-row-text' },
       h('strong', null, r.title),
       h('span', { class: 'recipe-row-meta' },

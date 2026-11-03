@@ -1,4 +1,5 @@
 // Statistiques sur ce qu'on mange (logique pure, testée).
+import { isThermomix } from './sources.js';
 import { ingredientKey, isStaple } from './aisles.js';
 import { addDays, daysBetween, fromISO, weekStart } from './dates.js';
 import { SLOTS } from './plan.js';
@@ -137,6 +138,6 @@ export function collectionStats(recipes) {
     categorized: active.filter((r) => r.category).length,
     rated: rated.length,
     avgRating: rated.length ? rated.reduce((s, r) => s + r.rating, 0) / rated.length : null,
-    thermomix: active.filter((r) => r.source?.type === 'cookidoo' || (r.tags || []).includes('thermomix')).length,
+    thermomix: active.filter(isThermomix).length,
   };
 }

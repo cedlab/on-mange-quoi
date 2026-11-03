@@ -2415,3 +2415,36 @@ code {
 .sel-chip .thumb {
   border-radius: 50%;
 }
+
+/* --- Source sur les vignettes ------------------------------------------------- */
+
+.thumb-wrap {
+  position: relative;
+  flex: none;
+  display: inline-flex;
+}
+.src-badge {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: 0 1px 4px rgb(0 0 0 / 22%);
+  font-size: 13px;
+  line-height: 1;
+}
+.src-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+}

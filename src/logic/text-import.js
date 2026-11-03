@@ -277,12 +277,9 @@ export function parseRecipeText(text) {
     // « Source : Nadine » : un prénom, donc une recette d'un proche.
     const short = source.title && source.title.split(/\s+/).length <= 3 && !/[.]/.test(source.title);
     const type = url ? detectSourceType(url) : short ? 'perso' : 'autre';
-    const title = source.title || { cookidoo: 'Cookidoo', chronodrive: 'Chronodrive' }[type];
+    const title = source.title || { cookidoo: 'Cookidoo', chronodrive: 'Chronodrive', quitoque: 'Quitoque' }[type];
     out.source = { type, ...(title ? { title } : {}), ...(url ? { url } : {}) };
   }
-  const thermomix = out.source?.type === 'cookidoo'
-    || out.steps.some((st) => st.text && new RegExp(TM_SETTING.source, 'i').test(st.text));
-  if (thermomix) out.tags = ['thermomix'];
   if (!out.title) out.title = 'Recette sans titre';
   return out;
 }

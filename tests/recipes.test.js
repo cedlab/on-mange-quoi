@@ -95,3 +95,15 @@ describe('demi-étoiles', () => {
     expect(filterRecipes(list, { minRating: 3.5 }).map((r) => r.id)).toEqual(['a']);
   });
 });
+
+describe('sources Quitoque et Thermomix (anciens tags)', () => {
+  it('transforme #quitoque en source et retire #thermomix', async () => {
+    const { sourceMigration, isThermomix } = await import('../src/logic/sources.js');
+    expect(sourceMigration({ tags: ['quitoque', 'rapide'], source: { type: 'autre', title: 'Quitoque' } }))
+      .toEqual({ tags: ['rapide'], source: { type: 'quitoque', title: 'Quitoque' } });
+    expect(sourceMigration({ tags: ['thermomix'], source: { type: 'cookidoo', title: 'Cookidoo' } })).toEqual({ tags: [] });
+    expect(sourceMigration({ tags: ['rapide'], source: { type: 'livre', title: 'X' } })).toBeNull();
+    expect(isThermomix({ source: { type: 'livre' }, steps: [{ text: 'Mixer 5 sec/vitesse 5.' }] })).toBe(true);
+    expect(isThermomix({ source: { type: 'quitoque' }, steps: [{ text: 'Cuire 10 min.' }] })).toBe(false);
+  });
+});

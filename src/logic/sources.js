@@ -5,7 +5,8 @@ export const SOURCE_TYPES = [
   { id: 'livre', label: 'Livre', emoji: '📕' },
   { id: 'pdf', label: 'PDF', emoji: '📄' },
   { id: 'web', label: 'Site web', emoji: '🌐' },
-  { id: 'cookidoo', label: 'Cookidoo', emoji: '🥣' },
+  { id: 'cookidoo', label: 'Thermomix', emoji: '🥣' },
+  { id: 'quitoque', label: 'Quitoque', emoji: '🥕' },
   { id: 'chronodrive', label: 'Chronodrive', emoji: '🛒' },
   { id: 'magazine', label: 'Magazine', emoji: '📰' },
   { id: 'perso', label: 'Perso / un proche', emoji: '👵' },
@@ -24,6 +25,7 @@ export function detectSourceType(url) {
   if (!host) return null;
   if (/(^|\.)cookidoo\./.test(host)) return 'cookidoo';
   if (/(^|\.)chronodrive\./.test(host)) return 'chronodrive';
+  if (/(^|\.)quitoque\./.test(host)) return 'quitoque';
   return 'web';
 }
 
@@ -59,7 +61,7 @@ export function validateSource(src) {
   if (['web', 'cookidoo', 'chronodrive'].includes(src.type) && !hasUrl && !hasTitle) {
     return 'Colle le lien de la recette (ou au moins le nom du site).';
   }
-  if (!['web', 'cookidoo', 'chronodrive'].includes(src.type) && !hasTitle) {
+  if (!['web', 'cookidoo', 'chronodrive', 'quitoque'].includes(src.type) && !hasTitle) {
     return {
       livre: 'Indique le titre du livre.',
       pdf: 'Indique le nom du PDF.',
@@ -97,10 +99,31 @@ export function sourceLabel(src) {
   return name ? `${name}${author}${page}` : t.label;
 }
 
+/** Recette pour le Thermomix : de Cookidoo, ou avec des réglages Thermomix dans les étapes. */
+export function isThermomix(r) {
+  return r?.source?.type === 'cookidoo'
+    || (r?.steps || []).some((s) => s.text && /\b(?:vitesse|vit\.)\s*(?:\d|Ⓢ|mijotage|turbo)/i.test(s.text));
+}
+
+/**
+ * Anciennes recettes : #quitoque et #thermomix étaient des tags ; ce sont
+ * désormais des sources. Renvoie les champs à corriger, ou null.
+ */
+export function sourceMigration(r) {
+  const tags = r.tags || [];
+  const quitoque = tags.includes('quitoque') || (r.source?.type === 'autre' && /^quitoque$/i.test(r.source?.title || ''));
+  const cleaned = tags.filter((t) => t !== 'quitoque' && t !== 'thermomix');
+  if (!quitoque && cleaned.length === tags.length) return null;
+  const out = { tags: cleaned };
+  if (quitoque && r.source?.type !== 'quitoque' && r.source?.type !== 'cookidoo') out.source = { ...r.source, type: 'quitoque', title: r.source?.title || 'Quitoque' };
+  return out;
+}
+
 /** Libellé du bouton qui ouvre la recette d'origine. */
 export function openLabel(src) {
   if (!src?.url) return null;
   if (src.type === 'cookidoo') return 'Ouvrir dans Cookidoo';
   if (src.type === 'chronodrive') return 'Ouvrir sur Chronodrive';
+  if (src.type === 'quitoque') return 'Ouvrir sur Quitoque';
   return `Ouvrir sur ${hostOf(src.url)}`;
 }

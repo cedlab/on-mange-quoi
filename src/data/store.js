@@ -2,6 +2,7 @@
 import { OWNER_EMAIL } from '../firebase.js';
 import { cleanRecipe, searchText, validateRecipe } from '../logic/recipes.js';
 import { weekStart } from '../logic/dates.js';
+import { sourceMigration } from '../logic/sources.js';
 import { DEFAULT_SETTINGS, SLOTS } from '../logic/plan.js';
 
 const MEMBER_KEY = 'omq.member';
@@ -130,11 +131,23 @@ export class Store {
       this.byId = new Map(list.map((r) => [r.id, r]));
       this.loaded = true;
       this.emit('recipes');
+      this.#migrateSources(list);
     }, onError);
     this.unwatch = () => {
       stopRecipes();
       for (const stop of stops) stop();
     };
+  }
+
+  // #quitoque / #thermomix : anciens tags devenus des sources (corrigé une fois, en silence).
+  #migrating = new Set();
+  #migrateSources(list) {
+    for (const r of list) {
+      const fix = sourceMigration(r);
+      if (!fix || this.#migrating.has(r.id)) continue;
+      this.#migrating.add(r.id);
+      this.backend.updateRecipe(r.id, fix).catch(() => this.#migrating.delete(r.id));
+    }
   }
 
   get activeRecipes() {

@@ -117,7 +117,7 @@ function servings(y) {
 export function draftFromPage(page) {
   const url = normalizeUrl(page.finalUrl || page.url) || normalizeUrl(page.url);
   const type = detectSourceType(url) || 'web';
-  const siteName = cleanText(page.meta?.siteName) || { chronodrive: 'Chronodrive', cookidoo: 'Cookidoo' }[type] || hostOf(url) || 'Site web';
+  const siteName = cleanText(page.meta?.siteName) || { chronodrive: 'Chronodrive', cookidoo: 'Cookidoo', quitoque: 'Quitoque' }[type] || hostOf(url) || 'Site web';
   const source = { type, title: siteName, ...(url ? { url } : {}) };
   const r = page.recipe;
   if (r) {
@@ -128,7 +128,7 @@ export function draftFromPage(page) {
       ingredients: parseIngredientsText(ing.join('\n')),
       steps: steps(r.recipeInstructions),
       source,
-      tags: type === 'cookidoo' ? ['thermomix'] : [],
+      tags: [],
     };
     const prep = isoMinutes(r.prepTime);
     const cook = isoMinutes(r.cookTime);

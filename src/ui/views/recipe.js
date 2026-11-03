@@ -333,6 +333,7 @@ export function recipeView({ id }) {
         h('h1', { class: 'recipe-title' }, r.title),
         h('div', { class: 'row gap wrap' },
           h('button', { class: `chip-select ${c ? 'on' : ''}`, onclick: () => chooseCategory(r) }, c ? `${c.emoji} ${c.label}` : '+ Catégorie'),
+          r.source?.type && r.source.type !== 'autre' && h('span', { class: 'src-chip' }, `${sourceType(r.source.type).emoji} ${sourceType(r.source.type).label}`),
           starInput(r)),
         times.length > 0 && h('div', { class: 'times' },
           times.map(([l, m]) => h('span', null, h('small', null, l), formatMinutes(m))),

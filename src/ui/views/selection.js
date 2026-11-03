@@ -7,7 +7,7 @@ import { h, plural, setChildren } from '../dom.js';
 import { icon } from '../icons.js';
 import { micButton } from '../voice.js';
 import { planSheet } from './recipe.js';
-import { recipeThumb } from './recipes.js';
+import { recipeThumb, thumbWithSource } from './recipes.js';
 
 /** « aujourd'hui », « hier », « il y a 3 jours », « il y a 2 semaines »… */
 export function ago(ts, now = Date.now()) {
@@ -103,7 +103,7 @@ function itemCard(item) {
   const r = item.recipeId ? store.recipe(item.recipeId) : null;
   const gone = item.recipeId && (!r || r.deleted);
   const who = [item.addedByName && `par ${item.addedByName}`, ago(item.addedAt)].filter(Boolean).join(' · ');
-  const thumb = r ? recipeThumb(r, 64) : h('span', { class: 'thumb thumb-empty', style: { width: '64px', height: '64px' } }, item.text ? '✏️' : '🍽️');
+  const thumb = r ? thumbWithSource(r, 64) : h('span', { class: 'thumb thumb-empty', style: { width: '64px', height: '64px' } }, item.text ? '✏️' : '🍽️');
   const title = h('strong', null, selectionLabel(item));
   const remove = h('button', {
     class: 'icon-btn', 'aria-label': 'Retirer de Mes envies', onclick: async () => {
