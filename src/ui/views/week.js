@@ -3,11 +3,13 @@ import { store } from '../../app.js';
 import {
   addDays, dayName, dayNumber, daysBetween, formatRange, formatShort, todayISO, weekDays, weekStart, weeksBetween,
 } from '../../logic/dates.js';
-import { entryLabel, moveEntry, plannedDays, QUICK_TEXTS, SLOTS, slotEntries } from '../../logic/plan.js';
+import {
+  dayOrder, entryLabel, mealLists, MOMENTS, moveEntry, plannedDays, prepLabel, QUICK_TEXTS, reorderShown, SLOTS, slotEntries, tasksOn,
+} from '../../logic/plan.js';
 import { filterRecipes, normalizeText } from '../../logic/recipes.js';
 import { suggest } from '../../logic/suggest.js';
 import { openCalendar } from '../calendar.js';
-import { confirmDialog, header, sheet, toast } from '../components.js';
+import { confirmDialog, header, segmented, sheet, toast } from '../components.js';
 import { h, plural, setChildren } from '../dom.js';
 import { icon } from '../icons.js';
 import { recipeThumb, thumbWithSource } from './recipes.js';
@@ -144,20 +146,27 @@ export function openSlot(date, slotId) {
 
   // Texte libre : « Raclette chez Paul », « Pâtes au beurre »…
   const freeInput = h('input', { class: 'input grow', placeholder: 'Ex. Raclette chez Paul, pâtes au beurre…', autocomplete: 'off', enterkeyhint: 'done' });
+  // « C'est une tâche » : « Sortir la viande du congélateur » n'est pas un plat.
+  const isTask = h('input', { type: 'checkbox' });
   const freeForm = h('form', {
-    class: 'free-text stack tight', onsubmit: (e) => {
+    class: 'free-text stack tight', onsubmit: async (e) => {
       e.preventDefault();
       const t = freeInput.value.trim();
       if (!t) return;
       freeInput.value = '';
-      addText(t);
+      if (isTask.checked) {
+        isTask.checked = false;
+        await addTask(date, t, slotId.startsWith('midi') ? 'midi' : 'soir');
+        toast(`Tâche ajoutée : ${t}.`);
+      } else addText(t);
     },
   },
   h('span', { class: 'field-label' }, '✏️ Texte libre'),
   h('div', { class: 'row gap' }, freeInput,
     // Dictée : le texte dit est écrit dans le champ, il reste à toucher « Ajouter ».
     micButton(freeInput),
-    h('button', { class: 'btn primary', type: 'submit' }, 'Ajouter')));
+    h('button', { class: 'btn primary', type: 'submit' }, 'Ajouter')),
+  h('label', { class: 'task-check' }, isTask, h('span', null, '📝 C’est une tâche, pas un repas'), h('small', { class: 'muted' }, ' (ex. sortir la viande du congélateur)')));
 
   const search = h('input', {
     class: 'input', type: 'search', placeholder: 'Chercher une recette…', autocomplete: 'off', enterkeyhint: 'search',
@@ -174,7 +183,7 @@ export function openSlot(date, slotId) {
       const counts = new Map();
       for (const plan of Object.values(store.plans)) {
         for (const slots of Object.values(plan.days || {})) {
-          for (const l of Object.values(slots || {})) for (const e of l || []) if (e.recipeId) counts.set(e.recipeId, (counts.get(e.recipeId) || 0) + 1);
+          for (const l of mealLists(slots)) for (const e of l) if (e.recipeId) counts.set(e.recipeId, (counts.get(e.recipeId) || 0) + 1);
         }
       }
       list = store.activeRecipes
@@ -209,13 +218,18 @@ export function openSlot(date, slotId) {
                 onclick: () => save(entries.map((x, j) => (j === i ? { ...x, servings: Math.max(0.5, x.servings - (x.servings > 1 ? 1 : 0.5)) } : x))) }, icon('minus', 16)),
               h('span', null, fmtServings(e.servings)),
               h('button', { class: 'step-btn small', 'aria-label': 'Plus de portions',
-                onclick: () => save(entries.map((x, j) => (j === i ? { ...x, servings: x.servings + (x.servings < 1 ? 0.5 : 1) } : x))) }, icon('plus', 16)))),
+                onclick: () => save(entries.map((x, j) => (j === i ? { ...x, servings: x.servings + (x.servings < 1 ? 0.5 : 1) } : x))) }, icon('plus', 16))),
+            // Préparer à l'avance (la veille…) : un rappel « À préparer » ce jour-là.
+            e.recipeId && h('button', {
+              class: `prep-chip ${e.prep ? 'on' : ''}`, type: 'button',
+              onclick: () => prepSheet(date, e, (prep) => save(entries.map((x, j) => (j === i ? withPrep(x, prep) : x)))),
+            }, icon('clock', 15), e.prep ? prepLabel(e.prep) : 'Préparer à l’avance')),
           // Ouverte avec les portions de ce repas (« ?portions=7 »).
           r && h('a', { class: 'icon-btn', href: `#/recette/${r.id}${e.servings ? `?portions=${e.servings}` : ''}`, 'aria-label': 'Voir la recette', onclick: () => s.close() }, icon('book', 18)),
           h('button', { class: 'icon-btn', 'aria-label': 'Retirer', onclick: () => save(entries.filter((_, j) => j !== i)) }, icon('close', 18)));
       }))),
       slot.child && family.length > 0 && h('button', {
-        class: 'btn ghost', onclick: () => save([...entries, ...family.map((e) => ({ ...e, servings: store.settings.childServings }))]),
+        class: 'btn ghost', onclick: () => save([...entries, ...family.map(({ prep, ...e }) => ({ ...e, servings: store.settings.childServings }))]),
       }, '👧 Même chose que les grands'),
       selectionRow(),
       freeForm,
@@ -228,6 +242,112 @@ export function openSlot(date, slotId) {
   }
   draw();
   const s = sheet(body, { title: `${dayName(date)} ${dayNumber(date)} · ${slot.label}`, className: 'tall' });
+}
+
+// --- Préparer à l'avance et tâches ---------------------------------------------------
+
+const MOMENT_WORD = { matin: 'matin', midi: 'midi', soir: 'soir' };
+const SLOT_WORD = { midi: 'midi', midiP: 'midi (Poupette)', soir: 'soir', soirP: 'soir (Poupette)' };
+
+function withPrep(entry, prep) {
+  const { prep: _old, ...rest } = entry;
+  return prep ? { ...rest, prep } : rest;
+}
+
+/** Choix du moment de préparation d'un plat (la veille au soir par défaut). */
+function prepSheet(mealDate, entry, onSave) {
+  const cur = entry.prep || { offset: 1, moment: 'soir' };
+  let offset = cur.offset;
+  let moment = cur.moment;
+  const body = h('div', { class: 'stack' });
+  const choices = [
+    { offset: 1, label: 'La veille', sub: formatShort(addDays(mealDate, -1)) },
+    { offset: 0, label: 'Le jour même', sub: formatShort(mealDate) },
+    { offset: 2, label: '2 jours avant', sub: formatShort(addDays(mealDate, -2)) },
+  ];
+  function draw() {
+    const custom = !choices.some((c) => c.offset === offset);
+    setChildren(body,
+      h('p', { class: 'small muted' }, `${entryLabel(entry, store.byId)}, pour ${dayName(mealDate).toLowerCase()} ${dayNumber(mealDate)}.`),
+      h('div', { class: 'menu flat' },
+        choices.map((c) => h('button', { class: `menu-item ${offset === c.offset ? 'on' : ''}`, onclick: () => { offset = c.offset; draw(); } },
+          h('span', { class: 'menu-icon' }, offset === c.offset ? icon('check', 20) : ''), h('span', { class: 'grow' }, c.label, h('small', null, c.sub)))),
+        h('button', {
+          class: `menu-item ${custom ? 'on' : ''}`, onclick: () => openCalendar({
+            title: 'Préparer quel jour ?', from: addDays(mealDate, -1), planned: plannedDays(store.plans),
+            actions: [{ label: 'Ce jour-là', primary: true, onPick: (d) => { offset = Math.max(0, Math.min(14, daysBetween(d, mealDate).length - 1)); draw(); } }],
+          }),
+        }, h('span', { class: 'menu-icon' }, custom ? icon('check', 20) : icon('calendar', 20)),
+        h('span', { class: 'grow' }, 'Autre jour…', h('small', null, custom ? formatShort(addDays(mealDate, -offset)) : 'Sur le calendrier')))),
+      h('span', { class: 'field-label' }, 'À quel moment ?'),
+      segmented(MOMENTS.map((m) => ({ value: m.id, label: m.label })), moment, (v) => { moment = v; }),
+      h('button', { class: 'btn primary big', onclick: () => { s.close(); onSave({ offset, moment, done: false }); } }, icon('clock', 20), 'Me le rappeler'),
+      entry.prep && h('button', { class: 'btn danger-ghost', onclick: () => { s.close(); onSave(null); } }, 'Retirer le rappel'));
+  }
+  draw();
+  const s = sheet(body, { title: 'Préparer à l’avance' });
+}
+
+async function addTask(date, text, moment) {
+  const own = tasksOn(store.plans, date).filter((t) => t.kind === 'todo').map(({ kind, index, ...t }) => t);
+  await store.setDayTasks(date, [...own, { id: `t${Date.now().toString(36)}`, text, moment, done: false }]);
+}
+
+/** Nouvelle tâche (« Sortir la viande du congélateur »), depuis le + d'un jour. */
+function taskSheet(date) {
+  const input = h('input', { class: 'input grow', placeholder: 'Ex. sortir la viande du congélateur', autocomplete: 'off', enterkeyhint: 'done' });
+  let moment = 'matin';
+  const s = sheet(h('form', {
+    class: 'stack', onsubmit: async (e) => {
+      e.preventDefault();
+      const t = input.value.trim();
+      if (!t) return;
+      s.close();
+      await addTask(date, t, moment).catch((err) => toast(`Non enregistré : ${err.message}`));
+    },
+  },
+  h('div', { class: 'row gap' }, input, micButton(input)),
+  h('span', { class: 'field-label' }, 'À quel moment ?'),
+  segmented(MOMENTS.map((m) => ({ value: m.id, label: m.label })), moment, (v) => { moment = v; }),
+  h('button', { class: 'btn primary big', type: 'submit' }, 'Ajouter la tâche')),
+  { title: `Tâche · ${dayName(date)} ${dayNumber(date)}` });
+  setTimeout(() => input.focus(), 250);
+}
+
+async function setTaskDone(date, t, done) {
+  if (t.kind === 'prep') {
+    const list = slotEntries(store.plans, t.mealDate, t.slotId);
+    await store.setSlot(t.mealDate, t.slotId, list.map((x, j) => (j === t.index ? { ...x, prep: { ...x.prep, done } } : x)));
+  } else {
+    const own = tasksOn(store.plans, date).filter((x) => x.kind === 'todo').map(({ kind, index, ...x }) => x);
+    await store.setDayTasks(date, own.map((x, j) => (j === t.index ? { ...x, done } : x)));
+  }
+}
+
+/** Ligne « À préparer » ou tâche, avec sa case à cocher. */
+function taskLine(date, t) {
+  const toggle = h('button', {
+    class: `task-box ${t.done ? 'done' : ''}`, 'aria-label': t.done ? 'Marquer à faire' : 'Marquer fait',
+    onclick: () => setTaskDone(date, t, !t.done).catch((e) => toast(`Non enregistré : ${e.message}`)),
+  }, t.done && icon('check', 14));
+  if (t.kind === 'prep') {
+    const r = store.recipe(t.entry.recipeId);
+    const forWhen = `pour ${dayName(t.mealDate).slice(0, 3).toLowerCase()}. ${SLOT_WORD[t.slotId]}`;
+    return h('div', { class: `cday-task ${t.done ? 'done' : ''}` }, toggle,
+      h('a', { class: 'task-text', href: r ? `#/recette/${r.id}${t.entry.servings ? `?portions=${t.entry.servings}` : ''}` : null },
+        h('span', { class: 'task-moment' }, MOMENT_WORD[t.moment]),
+        h('span', null, '🔪 À préparer : ', h('strong', null, entryLabel(t.entry, store.byId))),
+        h('small', null, ` · ${forWhen}${t.entry.servings ? ` · ${fmtServings(t.entry.servings)}` : ''}`)));
+  }
+  return h('div', { class: `cday-task ${t.done ? 'done' : ''}` }, toggle,
+    h('button', {
+      class: 'task-text', onclick: async () => {
+        if (await confirmDialog(`Supprimer la tâche « ${t.text} » ?`, { ok: 'Supprimer', danger: true })) {
+          const own = tasksOn(store.plans, date).filter((x) => x.kind === 'todo').map(({ kind, index, ...x }) => x);
+          await store.setDayTasks(date, own.filter((_, j) => j !== t.index));
+        }
+      },
+    }, h('span', { class: 'task-moment' }, MOMENT_WORD[t.moment]), h('span', null, '📝 ', t.text)));
 }
 
 // --- Vue Semaine -------------------------------------------------------------------
@@ -284,20 +404,46 @@ export function weekView(_, query = {}) {
 
   /** Choix du repas à remplir pour un jour (vue compacte). */
   function addChooser(date) {
-    const s = sheet(h('div', { class: 'menu flat' }, SLOTS.map((slot) => {
+    const s = sheet(h('div', { class: 'menu flat' }, dayOrder(store.plans, date).map((id) => SLOTS.find((x) => x.id === id)).map((slot) => {
       const entries = slotEntries(store.plans, date, slot.id);
       return h('button', { class: 'menu-item', onclick: () => { s.close(); openSlot(date, slot.id); } },
         h('span', { class: 'menu-icon' }, slot.child ? '👧' : slot.id === 'midi' ? '☀️' : '🌙'),
         h('span', { class: 'grow' }, slot.child ? `Poupette ${slot.id === 'midiP' ? 'midi' : 'soir'}` : slot.label,
           h('small', null, entries.length ? entries.map((e) => entryLabel(e, store.byId)).join(' · ') : 'Rien de prévu')),
         icon('back', 18));
-    })), { title: `${dayName(date)} ${dayNumber(date)}` });
+    }),
+    h('button', { class: 'menu-item', onclick: () => { s.close(); taskSheet(date); } },
+      h('span', { class: 'menu-icon' }, '📝'),
+      h('span', { class: 'grow' }, 'Une tâche', h('small', null, 'Pas un repas : sortir la viande, acheter le pain…')),
+      icon('back', 18))), { title: `${dayName(date)} ${dayNumber(date)}` });
   }
 
   /** Vue compacte : la date dans un rond, seuls les repas prévus sont affichés. */
   function compactDay(date) {
     const isSel = selected.has(date);
-    const filled = SLOTS.map((slot) => ({ slot, entries: slotEntries(store.plans, date, slot.id) })).filter((x) => x.entries.length);
+    const order = dayOrder(store.plans, date);
+    const filled = order.map((id) => SLOTS.find((s) => s.id === id)).map((slot) => ({ slot, entries: slotEntries(store.plans, date, slot.id) })).filter((x) => x.entries.length);
+    const tasks = tasksOn(store.plans, date);
+    const lines = h('div', { class: 'cday-lines' }, filled.map(({ slot, entries }) => h('button', { class: `cday-line ${slot.child ? 'child' : ''}`, onclick: () => (selecting ? toggleSel(date) : openSlot(date, slot.id)) },
+      h('span', { class: 'cday-label' }, slot.child ? `👧 ${slot.id === 'midiP' ? 'Midi' : 'Soir'}` : slot.label),
+      h('span', { class: 'cday-meals' }, entries.map((e) => {
+        const r = e.recipeId ? store.recipe(e.recipeId) : null;
+        return h('span', { class: `cday-meal ${e.text ? 'free' : ''}` },
+          // Plat de l'onglet Recettes : sa photo (sinon une petite icône livre),
+          // avec le petit symbole de sa provenance.
+          r?.thumb ? withSource(r, h('img', { src: r.thumb, alt: '' }))
+            : e.recipeId ? withSource(r, h('span', { class: 'cday-recipe-icon', title: 'Recette', 'aria-label': 'Recette' }, icon('book', 13))) : null,
+          entryLabel(e, store.byId),
+          e.prep && h('span', { class: 'cday-prep-mark', title: `Préparé à l’avance : ${prepLabel(e.prep).toLowerCase()}`, 'aria-label': 'Préparé à l’avance' }, icon('clock', 13)));
+      })))));
+    // Appui long sur un repas, puis glisser : Poupette avant Midi… (ce jour-là seulement).
+    if (!selecting && filled.length > 1) {
+      makeSortable(lines, {
+        longPress: true,
+        onReorder: (from, to) => store.setDayOrder(date, reorderShown(order, filled.map((x) => x.slot.id), from, to))
+          .catch((e) => toast(`Non enregistré : ${e.message}`)),
+      });
+    }
     return h('section', { class: `cday ${date === today ? 'today' : ''} ${date < today ? 'past' : ''} ${isSel ? 'selected' : ''}`, id: `jour-${date}` },
       h('button', {
         class: 'cday-date', 'aria-label': `${dayName(date)} ${dayNumber(date)}`,
@@ -306,19 +452,10 @@ export function weekView(_, query = {}) {
       selecting && isSel ? icon('check', 18) : h('strong', null, String(dayNumber(date))),
       h('small', null, `${dayName(date).slice(0, 3).toLowerCase()}.`)),
       h('div', { class: 'cday-card' },
+        tasks.length > 0 && h('div', { class: 'cday-tasks' }, tasks.map((t) => taskLine(date, t))),
         filled.length
-          ? filled.map(({ slot, entries }) => h('button', { class: `cday-line ${slot.child ? 'child' : ''}`, onclick: () => (selecting ? toggleSel(date) : openSlot(date, slot.id)) },
-            h('span', { class: 'cday-label' }, slot.child ? `👧 ${slot.id === 'midiP' ? 'Midi' : 'Soir'}` : slot.label),
-            h('span', { class: 'cday-meals' }, entries.map((e) => {
-              const r = e.recipeId ? store.recipe(e.recipeId) : null;
-              return h('span', { class: `cday-meal ${e.text ? 'free' : ''}` },
-                // Plat de l'onglet Recettes : sa photo, sinon une petite icône livre.
-                // avec le petit symbole de sa provenance.
-                r?.thumb ? withSource(r, h('img', { src: r.thumb, alt: '' }))
-                  : e.recipeId ? withSource(r, h('span', { class: 'cday-recipe-icon', title: 'Recette', 'aria-label': 'Recette' }, icon('book', 13))) : null,
-                entryLabel(e, store.byId));
-            }))))
-          : h('button', { class: 'cday-empty', onclick: () => (selecting ? toggleSel(date) : addChooser(date)) }, 'Rien de prévu'),
+          ? lines
+          : h('button', { class: 'cday-empty', onclick: () => (selecting ? toggleSel(date) : addChooser(date)) }, tasks.length ? 'Aucun repas prévu' : 'Rien de prévu'),
         !selecting && h('button', { class: 'cday-add', 'aria-label': `Ajouter un repas le ${dayName(date).toLowerCase()} ${dayNumber(date)}`, onclick: () => addChooser(date) }, icon('plus', 18))));
   }
 

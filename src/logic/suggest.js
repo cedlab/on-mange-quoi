@@ -2,6 +2,7 @@
 // comment — de saison, pas mangée récemment, plutôt bien notée.
 // Logique pure (le hasard est injectable pour les tests).
 import { isThermomix } from './sources.js';
+import { mealLists } from './plan.js';
 import { addDays } from './dates.js';
 import { ingredientKey } from './aisles.js';
 import { normalizeText, totalMinutes } from './recipes.js';
@@ -70,7 +71,7 @@ export function lastPlanned(plans) {
   const last = new Map();
   for (const plan of Object.values(plans || {})) {
     for (const [date, slots] of Object.entries(plan.days || {})) {
-      for (const list of Object.values(slots || {})) {
+      for (const list of mealLists(slots)) {
         for (const e of list || []) {
           if (e.recipeId && (!last.has(e.recipeId) || last.get(e.recipeId) < date)) last.set(e.recipeId, date);
         }

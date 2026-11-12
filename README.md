@@ -36,6 +36,9 @@ C'est une application web installable (PWA) : elle s'ouvre en plein écran et fo
 - **Temps réel.** Une modification faite sur un téléphone apparaît aussitôt sur les autres.
 
 - **Planning** (onglet, étape 2) : planning du samedi au vendredi avec, pour chaque jour, Midi, Poupette, Soir et Poupette. Quand un repas compte plusieurs plats, on change leur ordre en les faisant glisser par leur poignée (⋮⋮) dans la fenêtre du repas.
+  - **Ordre des repas d'un jour** : appui long sur une ligne (Midi, Poupette, Soir…) puis glisser, par exemple Poupette avant Midi. L'ordre ne vaut que pour ce jour-là (le menu PDF garde l'ordre habituel).
+  - **Préparer à l'avance** : dans la fenêtre d'un repas, « ⏰ Préparer à l'avance » sur un plat (la veille, le jour même, 2 jours avant ou autre jour ; matin, midi ou soir). Le jour choisi, une ligne « 🔪 À préparer : … » s'affiche avec une case à cocher ; elle ouvre la recette aux bonnes portions et suit le repas s'il est déplacé. Le plat garde un petit ⏰.
+  - **Tâches** : « 📝 C'est une tâche, pas un repas » sous le texte libre, ou + d'un jour → « Une tâche » (sortir la viande, acheter le pain…). Les tâches ne comptent pas comme des repas (stats, menu PDF).
   - Ajouter un repas : toucher un créneau, puis choisir une recette (recherche, recettes souvent au menu, mieux notées) ou un texte libre (« Restes », « Cantine »…), avec le nombre de portions.
   - Poupette : bouton « Même chose que les grands ».
   - Vue **compacte** par défaut : la date dans un rond et seuls les repas prévus, pour voir toute la semaine sur un écran. Le bouton en haut à gauche bascule vers la vue détaillée (créneau par créneau).

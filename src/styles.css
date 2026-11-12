@@ -2521,3 +2521,127 @@ code {
   box-shadow: 0 8px 22px rgb(0 0 0 / 18%);
   cursor: grabbing;
 }
+
+/* --- Planning : préparer à l'avance, tâches, ordre des repas ------------------ */
+
+.prep-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+  padding: 4px 10px;
+  border: 1px dashed var(--line);
+  border-radius: 999px;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.prep-chip.on {
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line));
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  color: var(--accent);
+}
+.task-check {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+.task-check input {
+  width: 18px;
+  height: 18px;
+}
+.cday-tasks {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 2px -6px 4px;
+  padding: 4px 6px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface));
+}
+.cday-task {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+}
+.task-box {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 2px solid color-mix(in srgb, var(--accent) 60%, var(--line));
+  border-radius: 6px;
+  background: var(--surface);
+  color: #fff;
+  cursor: pointer;
+}
+.task-box.done {
+  border-color: var(--ok);
+  background: var(--ok);
+}
+.task-text {
+  flex: 1;
+  min-width: 0;
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 0.88rem;
+  line-height: 1.3;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.task-text small {
+  color: var(--muted);
+}
+.task-moment {
+  display: inline-block;
+  min-width: 42px;
+  margin-right: 4px;
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.cday-task.done .task-text {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+.cday-prep-mark {
+  display: inline-flex;
+  color: var(--accent);
+}
+.cday-lines {
+  display: flex;
+  flex-direction: column;
+}
+.cday-lines .cday-line {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+.cday-lines .cday-line + .cday-line {
+  border-top: 1px solid var(--line);
+}
+.cday-lines.sorting > * {
+  transition: transform 0.15s ease;
+}
+.cday-lines.sorting > .dragging {
+  position: relative;
+  z-index: 2;
+  transition: none;
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 8px 22px rgb(0 0 0 / 20%);
+}

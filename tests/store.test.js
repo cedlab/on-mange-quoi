@@ -90,7 +90,7 @@ describe('planning', () => {
 
     await store.clearDays(['2026-09-05']);
     await tick();
-    expect(store.plans['2026-09-05'].days['2026-09-05']).toEqual({ midi: [], midiP: [], soir: [], soirP: [] });
+    expect(store.plans['2026-09-05'].days['2026-09-05']).toEqual({ midi: [], midiP: [], soir: [], soirP: [], tasks: [] });
     await store.saveSettings({ familyServings: 3 });
     await tick();
     expect(store.settings).toMatchObject({ familyServings: 3, childServings: 1 });

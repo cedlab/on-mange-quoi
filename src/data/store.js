@@ -222,13 +222,23 @@ export class Store {
     return this.backend.put(`plans/${weekStart(date)}`, { days: { [date]: { [slot]: entries } } }, { merge: true });
   }
 
+  /** Ordre des repas d'un jour (Poupette avant Midi…). */
+  setDayOrder(date, order) {
+    return this.backend.put(`plans/${weekStart(date)}`, { days: { [date]: { order } } }, { merge: true });
+  }
+
+  /** Tâches d'un jour (« Sortir la viande du congélateur »). */
+  setDayTasks(date, tasks) {
+    return this.backend.put(`plans/${weekStart(date)}`, { days: { [date]: { tasks } } }, { merge: true });
+  }
+
   /** Vide les jours donnés. */
   async clearDays(dates) {
     const byWeek = new Map();
     for (const d of dates) {
       const w = weekStart(d);
       if (!byWeek.has(w)) byWeek.set(w, {});
-      byWeek.get(w)[d] = Object.fromEntries(SLOTS.map((s) => [s.id, []]));
+      byWeek.get(w)[d] = { ...Object.fromEntries(SLOTS.map((s) => [s.id, []])), tasks: [] };
     }
     await this.backend.writeOps([...byWeek.entries()].map(([w, days]) => ({ op: 'set', path: `plans/${w}`, data: { days }, merge: true })));
   }
