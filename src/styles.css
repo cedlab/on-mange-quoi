@@ -2493,30 +2493,31 @@ code {
   height: 16px;
 }
 
-/* Ordre des plats d'un repas */
-.reorder {
+/* Ordre des plats d'un repas : poignée à glisser */
+.drag-handle {
   flex: none;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin-right: -2px;
-}
-.reorder-btn {
   display: grid;
   place-items: center;
   width: 30px;
-  height: 26px;
-  padding: 0;
-  border: 0;
-  border-radius: 8px;
-  background: var(--surface);
-  color: var(--text);
-  cursor: pointer;
+  height: 44px;
+  margin: -4px -4px -4px -2px;
+  color: var(--muted);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
-.reorder-btn:disabled {
-  opacity: 0.25;
-  cursor: default;
+.drag-handle svg {
+  fill: currentColor;
+  stroke: none;
 }
-.reorder-btn:not(:disabled):active {
-  transform: scale(0.92);
+.slot-entries.sorting > * {
+  transition: transform 0.15s ease;
+}
+.slot-entries.sorting > .dragging {
+  position: relative;
+  z-index: 2;
+  transition: none;
+  box-shadow: 0 8px 22px rgb(0 0 0 / 18%);
+  cursor: grabbing;
 }

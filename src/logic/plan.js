@@ -49,11 +49,11 @@ export function plannedDays(plans) {
   return days;
 }
 
-/** Déplace l'élément i d'un cran (delta -1 : vers le haut, +1 : vers le bas). Nouvelle liste. */
-export function moveEntry(list, i, delta) {
-  const j = i + delta;
-  if (i < 0 || i >= list.length || j < 0 || j >= list.length) return list.slice();
+/** Déplace l'élément de la position from à la position to. Nouvelle liste. */
+export function moveEntry(list, from, to) {
+  if (from < 0 || from >= list.length || to < 0 || to >= list.length || from === to) return list.slice();
   const out = list.slice();
-  [out[i], out[j]] = [out[j], out[i]];
+  const [item] = out.splice(from, 1);
+  out.splice(to, 0, item);
   return out;
 }

@@ -73,13 +73,22 @@ describe('planning et courses', () => {
 });
 
 describe('ordre des plats d’un repas', () => {
-  it('monte et descend un plat, sans sortir de la liste', async () => {
+  it('déplace un plat d’une position à une autre, sans toucher à la liste d’origine', async () => {
     const { moveEntry } = await import('../src/logic/plan.js');
     const l = [{ text: 'Entrée' }, { text: 'Plat' }, { text: 'Dessert' }];
-    expect(moveEntry(l, 2, -1).map((e) => e.text)).toEqual(['Entrée', 'Dessert', 'Plat']);
-    expect(moveEntry(l, 0, 1).map((e) => e.text)).toEqual(['Plat', 'Entrée', 'Dessert']);
-    expect(moveEntry(l, 0, -1).map((e) => e.text)).toEqual(['Entrée', 'Plat', 'Dessert']);
-    expect(moveEntry(l, 2, 1).map((e) => e.text)).toEqual(['Entrée', 'Plat', 'Dessert']);
+    expect(moveEntry(l, 2, 0).map((e) => e.text)).toEqual(['Dessert', 'Entrée', 'Plat']);
+    expect(moveEntry(l, 0, 2).map((e) => e.text)).toEqual(['Plat', 'Dessert', 'Entrée']);
+    expect(moveEntry(l, 1, 1).map((e) => e.text)).toEqual(['Entrée', 'Plat', 'Dessert']);
+    expect(moveEntry(l, 0, 5).map((e) => e.text)).toEqual(['Entrée', 'Plat', 'Dessert']);
     expect(l.map((e) => e.text)).toEqual(['Entrée', 'Plat', 'Dessert']);
+  });
+  it('calcule la position d’arrivée en glissant', async () => {
+    const { dropIndex } = await import('../src/ui/drag-sort.js');
+    const mids = [50, 150, 250];
+    expect(dropIndex(mids, 0, 50)).toBe(0);
+    expect(dropIndex(mids, 0, 160)).toBe(1);
+    expect(dropIndex(mids, 0, 300)).toBe(2);
+    expect(dropIndex(mids, 2, 40)).toBe(0);
+    expect(dropIndex(mids, 2, 120)).toBe(1);
   });
 });
