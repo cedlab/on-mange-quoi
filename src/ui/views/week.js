@@ -4,7 +4,7 @@ import {
   addDays, dayName, dayNumber, daysBetween, formatRange, formatShort, todayISO, weekDays, weekStart, weeksBetween,
 } from '../../logic/dates.js';
 import {
-  dayOrder, entryLabel, leftoverCandidates, leftoverOf, leftoversFrom, mealLists, MOMENTS, moveEntry, plannedDays, prepLabel, QUICK_TEXTS, reorderShown, SLOTS, slotEntries, tasksOn,
+  dayItems, dayOrder, entryLabel, leftoverCandidates, leftoverOf, leftoversFrom, mealLists, MOMENTS, moveEntry, plannedDays, prepLabel, QUICK_TEXTS, reorderShown, SLOTS, slotEntries, tasksOn,
 } from '../../logic/plan.js';
 import { filterRecipes, normalizeText } from '../../logic/recipes.js';
 import { suggest } from '../../logic/suggest.js';
@@ -499,10 +499,13 @@ export function weekView(_, query = {}) {
   /** Vue compacte : la date dans un rond, seuls les repas prévus sont affichés. */
   function compactDay(date) {
     const isSel = selected.has(date);
-    const order = dayOrder(store.plans, date);
-    const filled = order.map((id) => SLOTS.find((s) => s.id === id)).map((slot) => ({ slot, entries: slotEntries(store.plans, date, slot.id) })).filter((x) => x.entries.length);
-    const tasks = tasksOn(store.plans, date);
-    const lines = h('div', { class: 'cday-lines' }, filled.map(({ slot, entries }) => h('button', { class: `cday-line ${slot.child ? 'child' : ''}`, onclick: () => (selecting ? toggleSel(date) : openSlot(date, slot.id)) },
+    // Repas prévus et tâches, mélangés dans l'ordre choisi pour ce jour.
+    const items = dayItems(store.plans, date);
+    const shown = items.filter((i) => i.type === 'task' || i.filled);
+    const mealCount = shown.filter((i) => i.type === 'slot').length;
+    const mealLine = (slot) => {
+      const entries = slotEntries(store.plans, date, slot.id);
+      return h('button', { class: `cday-line ${slot.child ? 'child' : ''}`, onclick: () => (selecting ? toggleSel(date) : openSlot(date, slot.id)) },
       h('span', { class: 'cday-label' }, slot.child ? `👧 ${slot.id === 'midiP' ? 'Midi' : 'Soir'}` : slot.label),
       h('span', { class: 'cday-meals' }, entries.map((e) => {
         const r = e.recipeId ? store.recipe(e.recipeId) : null;
@@ -514,12 +517,15 @@ export function weekView(_, query = {}) {
           e.leftover && h('span', { class: 'cday-leftover', 'aria-hidden': 'true' }, '♻️'),
           entryLabel(e, store.byId),
           e.prep && h('span', { class: 'cday-prep-mark', title: `Préparé à l’avance : ${prepLabel(e.prep).toLowerCase()}`, 'aria-label': 'Préparé à l’avance' }, icon('clock', 13)));
-      })))));
-    // Appui long sur un repas, puis glisser : Poupette avant Midi… (ce jour-là seulement).
-    if (!selecting && filled.length > 1) {
+      })));
+    };
+    const lines = h('div', { class: 'cday-lines' }, shown.map((i) => (i.type === 'task' ? taskLine(date, i.task) : mealLine(SLOTS.find((s) => s.id === i.id)))));
+    // Appui long sur un repas ou une tâche, puis glisser : Poupette avant Midi,
+    // tâche entre deux repas… (ce jour-là seulement).
+    if (!selecting && shown.length > 1) {
       makeSortable(lines, {
         longPress: true,
-        onReorder: (from, to) => store.setDayOrder(date, reorderShown(order, filled.map((x) => x.slot.id), from, to))
+        onReorder: (from, to) => store.setDayOrder(date, reorderShown(items.map((i) => i.key), shown.map((i) => i.key), from, to))
           .catch((e) => toast(`Non enregistré : ${e.message}`)),
       });
     }
@@ -531,10 +537,8 @@ export function weekView(_, query = {}) {
       selecting && isSel ? icon('check', 18) : h('strong', null, String(dayNumber(date))),
       h('small', null, `${dayName(date).slice(0, 3).toLowerCase()}.`)),
       h('div', { class: 'cday-card' },
-        tasks.length > 0 && h('div', { class: 'cday-tasks' }, tasks.map((t) => taskLine(date, t))),
-        filled.length
-          ? lines
-          : h('button', { class: 'cday-empty', onclick: () => (selecting ? toggleSel(date) : addChooser(date)) }, tasks.length ? 'Aucun repas prévu' : 'Rien de prévu'),
+        shown.length > 0 && lines,
+        !mealCount && h('button', { class: 'cday-empty', onclick: () => (selecting ? toggleSel(date) : addChooser(date)) }, shown.length ? 'Aucun repas prévu' : 'Rien de prévu'),
         !selecting && h('button', { class: 'cday-add', 'aria-label': `Ajouter un repas le ${dayName(date).toLowerCase()} ${dayNumber(date)}`, onclick: () => addChooser(date) }, icon('plus', 18))));
   }
 

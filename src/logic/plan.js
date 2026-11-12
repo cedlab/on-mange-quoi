@@ -6,7 +6,7 @@
 //   leftover : true — restes d'un plat (« Restes : Frittata »), from : { date, slotId } du repas d'origine.
 //   prep : { offset, moment, done } — à préparer `offset` jours avant, le matin / midi / soir.
 // Un jour peut aussi avoir :
-//   order : ['midiP', 'midi', 'soir', 'soirP'] — ordre d'affichage des repas ce jour-là ;
+//   order : ['task:t1', 'midiP', 'midi', 'prep:…', 'soir', 'soirP'] — ordre d'affichage des repas et tâches ce jour-là ;
 //   tasks : [{ id, text, moment, done }] — tâches (« Sortir la viande »), pas des repas.
 import { addDays, daysBetween, weekStart } from './dates.js';
 
@@ -106,10 +106,41 @@ export function plannedDays(plans) {
 
 // --- Ordre des repas d'un jour ---------------------------------------------------
 
+/** Clé d'une tâche dans l'ordre d'un jour. */
+export function taskKey(t) {
+  return t.kind === 'prep' ? `prep:${t.mealDate}:${t.slotId}:${t.entry.recipeId}` : `task:${t.id ?? t.index}`;
+}
+
+/**
+ * Lignes d'un jour, dans l'ordre choisi : repas (les 4, prévus ou non) et tâches.
+ * Par défaut, les tâches du matin en haut, celles de midi avant Midi, celles du soir avant Soir.
+ * Une ligne absente de l'ordre enregistré (nouvelle tâche…) prend sa place par défaut.
+ * → [{ type: 'slot', key, id, filled } | { type: 'task', key, task }]
+ */
+export function dayItems(plans, date) {
+  const day = plans[weekStart(date)]?.days?.[date] || {};
+  const tasks = tasksOn(plans, date);
+  const T = (m) => tasks.filter((t) => t.moment === m).map((task) => ({ type: 'task', key: taskKey(task), task }));
+  const S = (id) => ({ type: 'slot', key: id, id, filled: (day[id] || []).length > 0 });
+  const defaults = [...T('matin'), ...T('midi'), S('midi'), S('midiP'), ...T('soir'), S('soir'), S('soirP')];
+  const byKey = new Map(defaults.map((i) => [i.key, i]));
+  const result = [];
+  for (const k of day.order || []) if (byKey.has(k) && !result.includes(byKey.get(k))) result.push(byKey.get(k));
+  // Les lignes manquantes se placent juste avant la ligne qui les suit par défaut
+  // (une tâche du soir avant Soir), en partant de la fin.
+  for (let i = defaults.length - 1; i >= 0; i--) {
+    const item = defaults[i];
+    if (result.includes(item)) continue;
+    const next = defaults.slice(i + 1).find((n) => result.includes(n));
+    if (next) result.splice(result.indexOf(next), 0, item);
+    else result.push(item);
+  }
+  return result;
+}
+
 /** Ordre des repas ce jour-là (ordre habituel si rien n'a été choisi). */
 export function dayOrder(plans, date) {
-  const saved = (plans[weekStart(date)]?.days?.[date]?.order || []).filter((id) => SLOTS.some((s) => s.id === id));
-  return [...new Set([...saved, ...SLOTS.map((s) => s.id)])];
+  return dayItems(plans, date).filter((i) => i.type === 'slot').map((i) => i.id);
 }
 
 /**
