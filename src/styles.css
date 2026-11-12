@@ -2464,3 +2464,31 @@ code {
   height: 20px;
   vertical-align: 0;
 }
+
+/* Provenance en petit sur les images du planning */
+.mini-src-wrap {
+  position: relative;
+  flex: none;
+  display: inline-flex;
+}
+.src-badge.mini {
+  right: -4px;
+  bottom: -3px;
+  width: 13px;
+  height: 13px;
+  font-size: 8px;
+  box-shadow: 0 0 0 1.5px var(--surface);
+}
+.src-badge.mini .src-mark {
+  width: 13px;
+  height: 13px;
+}
+.meal .src-badge.mini {
+  width: 16px;
+  height: 16px;
+  font-size: 10px;
+}
+.meal .src-badge.mini .src-mark {
+  width: 16px;
+  height: 16px;
+}

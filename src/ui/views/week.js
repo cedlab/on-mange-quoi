@@ -10,7 +10,9 @@ import { openCalendar } from '../calendar.js';
 import { confirmDialog, header, sheet, toast } from '../components.js';
 import { h, plural, setChildren } from '../dom.js';
 import { icon } from '../icons.js';
-import { recipeThumb } from './recipes.js';
+import { recipeThumb, thumbWithSource } from './recipes.js';
+import { sourceIcon } from '../source-icon.js';
+import { sourceType } from '../../logic/sources.js';
 import { micButton } from '../voice.js';
 import { plannedFromSelection, selectionLabel } from './selection.js';
 import { deliverFile } from '../deliver-file.js';
@@ -201,7 +203,7 @@ export function openSlot(date, slotId) {
       entries.length > 0 && h('div', { class: 'slot-entries' }, entries.map((e, i) => {
         const r = e.recipeId ? store.recipe(e.recipeId) : null;
         return h('div', { class: 'slot-entry' },
-          r ? recipeThumb(r, 44) : h('span', { class: 'thumb thumb-empty', style: { width: '44px', height: '44px' } }, e.text ? '✏️' : '🍽️'),
+          r ? thumbWithSource(r, 44) : h('span', { class: 'thumb thumb-empty', style: { width: '44px', height: '44px' } }, e.text ? '✏️' : '🍽️'),
           h('div', { class: 'grow' },
             h('strong', null, entryLabel(e, store.byId)),
             e.recipeId && h('div', { class: 'mini-stepper' },
@@ -232,10 +234,18 @@ export function openSlot(date, slotId) {
 
 // --- Vue Semaine -------------------------------------------------------------------
 
+/** Petite image d'un plat avec, en bas à droite, le symbole de sa source (🥕, C vert…). */
+function withSource(r, img) {
+  const t = r?.source?.type && r.source.type !== 'autre' ? r.source.type : null;
+  if (!t) return img;
+  return h('span', { class: 'mini-src-wrap' }, img,
+    h('span', { class: 'src-badge mini', title: sourceType(t).label, role: 'img', 'aria-label': `Source : ${sourceType(t).label}` }, sourceIcon(t)));
+}
+
 function entryChip(e) {
   const r = e.recipeId ? store.recipe(e.recipeId) : null;
   return h('span', { class: `meal ${e.text ? 'meal-text' : ''}` },
-    r?.thumb ? h('img', { class: 'meal-thumb', src: r.thumb, alt: '' }) : h('span', { class: 'meal-thumb meal-emoji' }, e.text ? '✏️' : icon('book', 15)),
+    withSource(r, r?.thumb ? h('img', { class: 'meal-thumb', src: r.thumb, alt: '' }) : h('span', { class: 'meal-thumb meal-emoji' }, e.text ? '✏️' : icon('book', 15))),
     h('span', { class: 'meal-title' }, entryLabel(e, store.byId)),
     e.recipeId && e.servings && h('span', { class: 'meal-servings' }, String(e.servings).replace('.', ',')));
 }
@@ -332,8 +342,9 @@ export function weekView(_, query = {}) {
               const r = e.recipeId ? store.recipe(e.recipeId) : null;
               return h('span', { class: `cday-meal ${e.text ? 'free' : ''}` },
                 // Plat de l'onglet Recettes : sa photo, sinon une petite icône livre.
-                r?.thumb ? h('img', { src: r.thumb, alt: '' })
-                  : e.recipeId ? h('span', { class: 'cday-recipe-icon', title: 'Recette', 'aria-label': 'Recette' }, icon('book', 13)) : null,
+                // avec le petit symbole de sa provenance.
+                r?.thumb ? withSource(r, h('img', { src: r.thumb, alt: '' }))
+                  : e.recipeId ? withSource(r, h('span', { class: 'cday-recipe-icon', title: 'Recette', 'aria-label': 'Recette' }, icon('book', 13))) : null,
                 entryLabel(e, store.byId));
             }))))
           : h('button', { class: 'cday-empty', onclick: () => (selecting ? toggleSel(date) : addChooser(date)) }, 'Rien de prévu'),
@@ -400,7 +411,7 @@ export function weekView(_, query = {}) {
   draw();
   return {
     el: h('div', { class: 'page' },
-      header('Semaine', {
+      header('Planning', {
         lead: viewBtn,
         actions: [
           h('button', { class: 'icon-btn', 'aria-label': 'Menu en PDF', onclick: () => pdfMenu(currentWeek) }, icon('download')),
