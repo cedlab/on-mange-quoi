@@ -35,7 +35,7 @@ C'est une application web installable (PWA) : elle s'ouvre en plein écran et fo
 - **Corbeille** : une recette supprimée par erreur se restaure.
 - **Temps réel.** Une modification faite sur un téléphone apparaît aussitôt sur les autres.
 
-- **Semaine** (étape 2) : planning du samedi au vendredi avec, pour chaque jour, Midi, Poupette, Soir et Poupette.
+- **Planning** (onglet, étape 2) : planning du samedi au vendredi avec, pour chaque jour, Midi, Poupette, Soir et Poupette.
   - Ajouter un repas : toucher un créneau, puis choisir une recette (recherche, recettes souvent au menu, mieux notées) ou un texte libre (« Restes », « Cantine »…), avec le nombre de portions.
   - Poupette : bouton « Même chose que les grands ».
   - Vue **compacte** par défaut : la date dans un rond et seuls les repas prévus, pour voir toute la semaine sur un écran. Le bouton en haut à gauche bascule vers la vue détaillée (créneau par créneau).
@@ -48,8 +48,8 @@ C'est une application web installable (PWA) : elle s'ouvre en plein écran et fo
   - la saison : légumes et fruits du mois, plats réconfortants en hiver et frais en été, bûche en décembre, crêpes en février… ;
   - les recettes pas mangées depuis longtemps (rien de ce qui a été au menu ces 3 dernières semaines) ;
   - les mieux notées.
-  Les raisons du choix sont affichées. Filtres : catégorie, rapide, de saison, bien notées, Thermomix. On peut planifier la recette directement, et 3 autres idées sont proposées. Dans la Semaine, chaque créneau propose aussi une idée (Ajouter, ou 🔀 pour une autre).
-- **Mes envies** (onglet 🔖) : les recettes qui tentent, sans date. On les y ajoute avec le 🔖 de la liste des recettes, depuis la fiche d'une recette (« Ajouter à Mes envies »), depuis l'idée au hasard (« Garder pour plus tard »), ou en écrivant une idée (au clavier ou à la voix). La liste est commune à toute la famille et indique qui a ajouté quoi, et quand. « Mettre au menu » choisit le jour, le repas et les portions, puis retire l'élément de la liste (« Garder » pour l'y laisser). Dans la Semaine, la fenêtre d'un repas propose aussi Mes envies en premier, pour l'ajouter d'un seul geste.
+  Les raisons du choix sont affichées. Filtres : catégorie, rapide, de saison, bien notées, Thermomix. On peut planifier la recette directement, et 3 autres idées sont proposées. Dans le Planning, chaque créneau propose aussi une idée (Ajouter, ou 🔀 pour une autre).
+- **Mes envies** (onglet 🔖) : les recettes qui tentent, sans date. On les y ajoute avec le 🔖 de la liste des recettes, depuis la fiche d'une recette (« Ajouter à Mes envies »), depuis l'idée au hasard (« Garder pour plus tard »), ou en écrivant une idée (au clavier ou à la voix). La liste est commune à toute la famille et indique qui a ajouté quoi, et quand. « Mettre au menu » choisit le jour, le repas et les portions, puis retire l'élément de la liste (« Garder » pour l'y laisser). Dans le Planning, la fenêtre d'un repas propose aussi Mes envies en premier, pour l'ajouter d'un seul geste.
 - **Stats** (onglet) : ce qu'on mange d'après le planning, sur 4 semaines, 3 mois, 12 mois, tout l'historique ou une période choisie au calendrier.
   - En chiffres : nombre de repas, part de « fait maison », recettes différentes, part de plats de saison, note moyenne, repas de Poupette (dont « comme les grands »).
   - En classements : recettes les plus cuisinées, plats par semaine, catégories, origine des recettes, repas sans recette (Restes, Cantine…), ingrédients les plus présents, jours les plus remplis.
