@@ -123,7 +123,7 @@ describe('préparer à l’avance, tâches et ordre des repas d’un jour', () =
   it('ordre d’un jour : on déplace un repas affiché, les repas vides gardent leur place', async () => {
     const { dayOrder, reorderShown } = await import('../src/logic/plan.js');
     expect(dayOrder({}, '2026-11-16')).toEqual(['midi', 'midiP', 'soir', 'soirP']);
-    expect(dayOrder(week({ '2026-11-16': { order: ['soirP', 'soir'] } }), '2026-11-16')).toEqual(['soirP', 'soir', 'midi', 'midiP']);
+    expect(dayOrder(week({ '2026-11-16': { order: ['soirP', 'soir', 'midi', 'midiP'] } }), '2026-11-16')).toEqual(['soirP', 'soir', 'midi', 'midiP']);
     // Affichés : midi, soir, soirP (midiP vide) ; Poupette soir glissée au-dessus de Soir.
     expect(reorderShown(['midi', 'midiP', 'soir', 'soirP'], ['midi', 'soir', 'soirP'], 2, 1)).toEqual(['midi', 'midiP', 'soirP', 'soir']);
     // Poupette soir tout en haut.
@@ -156,5 +156,28 @@ describe('restes', () => {
     const st = computeStats({ plans, recipes: new Map([['f', { id: 'f', title: 'Frittata' }]]), from: '2026-11-14', to: '2026-11-20' });
     expect(st.topRecipes[0]).toMatchObject({ key: 'f', count: 1 });
     expect(st.texts[0]).toMatchObject({ key: 'restes', count: 1 });
+  });
+});
+
+describe('tâches placées parmi les repas d’un jour', () => {
+  const week = (days) => ({ '2026-11-14': { days } });
+  it('place les tâches selon leur moment, puis selon l’ordre choisi', async () => {
+    const { dayItems, reorderShown } = await import('../src/logic/plan.js');
+    const day = {
+      midi: [{ text: 'Quiche' }], soir: [{ text: 'Soupe' }], soirP: [{ text: 'Purée' }],
+      tasks: [{ id: 'a', text: 'Sortir la viande', moment: 'matin' }, { id: 'b', text: 'Acheter le pain', moment: 'soir' }],
+    };
+    let items = dayItems(week({ '2026-11-16': day }), '2026-11-16');
+    expect(items.map((i) => i.key)).toEqual(['task:a', 'midi', 'midiP', 'task:b', 'soir', 'soirP']);
+    // On glisse « Acheter le pain » (3e ligne affichée) sous Poupette soir (dernière).
+    const shown = items.filter((i) => i.type === 'task' || i.filled).map((i) => i.key);
+    expect(shown).toEqual(['task:a', 'midi', 'task:b', 'soir', 'soirP']);
+    const order = reorderShown(items.map((i) => i.key), shown, 2, 4);
+    items = dayItems(week({ '2026-11-16': { ...day, order } }), '2026-11-16');
+    expect(items.filter((i) => i.type === 'task' || i.filled).map((i) => i.key)).toEqual(['task:a', 'midi', 'soir', 'soirP', 'task:b']);
+    // Une nouvelle tâche du soir prend sa place par défaut (avant Soir).
+    const day2 = { ...day, order, tasks: [...day.tasks, { id: 'c', text: 'Vider le lave-vaisselle', moment: 'soir' }] };
+    const keys = dayItems(week({ '2026-11-16': day2 }), '2026-11-16').map((i) => i.key);
+    expect(keys.indexOf('task:c')).toBe(keys.indexOf('soir') - 1);
   });
 });
