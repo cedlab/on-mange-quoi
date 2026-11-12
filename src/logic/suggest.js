@@ -73,7 +73,7 @@ export function lastPlanned(plans) {
     for (const [date, slots] of Object.entries(plan.days || {})) {
       for (const list of mealLists(slots)) {
         for (const e of list || []) {
-          if (e.recipeId && (!last.has(e.recipeId) || last.get(e.recipeId) < date)) last.set(e.recipeId, date);
+          if (e.recipeId && !e.leftover && (!last.has(e.recipeId) || last.get(e.recipeId) < date)) last.set(e.recipeId, date);
         }
       }
     }

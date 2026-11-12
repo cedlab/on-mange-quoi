@@ -130,3 +130,31 @@ describe('préparer à l’avance, tâches et ordre des repas d’un jour', () =
     expect(reorderShown(['midi', 'midiP', 'soir', 'soirP'], ['midi', 'soir', 'soirP'], 2, 0)).toEqual(['soirP', 'midiP', 'midi', 'soir']);
   });
 });
+
+describe('restes', () => {
+  const week = (days) => ({ '2026-11-14': { days } });
+  it('propose les plats des jours d’avant, du plus récent au plus ancien, sans doublon', async () => {
+    const { leftoverCandidates, leftoverOf, entryLabel, leftoversFrom } = await import('../src/logic/plan.js');
+    const plans = week({
+      '2026-11-15': { soir: [{ recipeId: 'q', title: 'Quiche', servings: 2 }] },
+      '2026-11-16': { midi: [{ recipeId: 'f', title: 'Frittata', servings: 4 }, { text: 'Restaurant' }], soir: [{ text: 'Raclette' }] },
+      '2026-11-17': { midi: [{ recipeId: 'f', title: 'Frittata', servings: 2, leftover: true, from: { date: '2026-11-16', slotId: 'midi' } }] },
+    });
+    const c = leftoverCandidates(plans, '2026-11-17', 'soir');
+    expect(c.map((x) => x.entry.title || x.entry.text)).toEqual(['Raclette', 'Frittata', 'Quiche']);
+    expect(leftoverCandidates(plans, '2026-11-16', 'midi').map((x) => x.entry.title)).toEqual(['Quiche']);
+    const l = leftoverOf({ recipeId: 'f', title: 'Frittata', servings: 4 }, { date: '2026-11-16', slotId: 'midi' }, 2);
+    expect(l).toEqual({ recipeId: 'f', title: 'Frittata', servings: 2, leftover: true, from: { date: '2026-11-16', slotId: 'midi' } });
+    expect(entryLabel(l, new Map())).toBe('Restes : Frittata');
+    expect(leftoversFrom(plans, '2026-11-16', 'midi', 'f').map((x) => x.date)).toEqual(['2026-11-17']);
+  });
+  it('les restes ne comptent pas comme une recette cuisinée', async () => {
+    const { computeStats } = await import('../src/logic/stats.js');
+    const { lastPlanned } = await import('../src/logic/suggest.js');
+    const plans = week({ '2026-11-16': { midi: [{ recipeId: 'f' }] }, '2026-11-18': { midi: [{ recipeId: 'f', leftover: true }] } });
+    expect(lastPlanned(plans).get('f')).toBe('2026-11-16');
+    const st = computeStats({ plans, recipes: new Map([['f', { id: 'f', title: 'Frittata' }]]), from: '2026-11-14', to: '2026-11-20' });
+    expect(st.topRecipes[0]).toMatchObject({ key: 'f', count: 1 });
+    expect(st.texts[0]).toMatchObject({ key: 'restes', count: 1 });
+  });
+});

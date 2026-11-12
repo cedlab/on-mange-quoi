@@ -2645,3 +2645,19 @@ code {
   background: var(--surface);
   box-shadow: 0 8px 22px rgb(0 0 0 / 20%);
 }
+
+/* Restes */
+.entry-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 6px;
+}
+.leftover-chip {
+  border-color: color-mix(in srgb, var(--ok) 45%, var(--line));
+}
+.cday-leftover {
+  font-size: 0.85em;
+}
+.block {
+  display: block;
+}

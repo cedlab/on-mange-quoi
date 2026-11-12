@@ -4,12 +4,12 @@ import {
   addDays, dayName, dayNumber, daysBetween, formatRange, formatShort, todayISO, weekDays, weekStart, weeksBetween,
 } from '../../logic/dates.js';
 import {
-  dayOrder, entryLabel, mealLists, MOMENTS, moveEntry, plannedDays, prepLabel, QUICK_TEXTS, reorderShown, SLOTS, slotEntries, tasksOn,
+  dayOrder, entryLabel, leftoverCandidates, leftoverOf, leftoversFrom, mealLists, MOMENTS, moveEntry, plannedDays, prepLabel, QUICK_TEXTS, reorderShown, SLOTS, slotEntries, tasksOn,
 } from '../../logic/plan.js';
 import { filterRecipes, normalizeText } from '../../logic/recipes.js';
 import { suggest } from '../../logic/suggest.js';
 import { openCalendar } from '../calendar.js';
-import { confirmDialog, header, segmented, sheet, toast } from '../components.js';
+import { confirmDialog, header, segmented, sheet, stepper, toast } from '../components.js';
 import { h, plural, setChildren } from '../dom.js';
 import { icon } from '../icons.js';
 import { recipeThumb, thumbWithSource } from './recipes.js';
@@ -184,7 +184,7 @@ export function openSlot(date, slotId) {
       const counts = new Map();
       for (const plan of Object.values(store.plans)) {
         for (const slots of Object.values(plan.days || {})) {
-          for (const l of mealLists(slots)) for (const e of l) if (e.recipeId) counts.set(e.recipeId, (counts.get(e.recipeId) || 0) + 1);
+          for (const l of mealLists(slots)) for (const e of l) if (e.recipeId && !e.leftover) counts.set(e.recipeId, (counts.get(e.recipeId) || 0) + 1);
         }
       }
       list = store.activeRecipes
@@ -220,11 +220,20 @@ export function openSlot(date, slotId) {
               h('span', null, fmtServings(e.servings)),
               h('button', { class: 'step-btn small', 'aria-label': 'Plus de portions',
                 onclick: () => save(entries.map((x, j) => (j === i ? { ...x, servings: x.servings + (x.servings < 1 ? 0.5 : 1) } : x))) }, icon('plus', 16))),
-            // Préparer à l'avance (la veille…) : un rappel « À préparer » ce jour-là.
-            e.recipeId && h('button', {
-              class: `prep-chip ${e.prep ? 'on' : ''}`, type: 'button',
-              onclick: () => prepSheet(date, e, (prep) => save(entries.map((x, j) => (j === i ? withPrep(x, prep) : x)))),
-            }, icon('clock', 15), e.prep ? prepLabel(e.prep) : 'Préparer à l’avance')),
+            e.recipeId && !e.leftover && h('div', { class: 'entry-chips' },
+              // Préparer à l'avance (la veille…) : un rappel « À préparer » ce jour-là.
+              h('button', {
+                class: `prep-chip ${e.prep ? 'on' : ''}`, type: 'button',
+                onclick: () => prepSheet(date, e, (prep) => save(entries.map((x, j) => (j === i ? withPrep(x, prep) : x)))),
+              }, icon('clock', 15), e.prep ? prepLabel(e.prep) : 'Préparer à l’avance'),
+              // Prévoir des restes : ajoutés à un autre repas, portions du plat augmentées.
+              (() => {
+                const planned = leftoversFrom(store.plans, date, slotId, e.recipeId);
+                return h('button', {
+                  class: `prep-chip ${planned.length ? 'on' : ''}`, type: 'button',
+                  onclick: () => planLeftoversSheet(date, slotId, e, (extra) => save(entries.map((x, j) => (j === i ? { ...x, servings: x.servings + extra } : x)))),
+                }, '♻️ ', planned.length ? `Restes : ${planned.map((p) => `${dayName(p.date).slice(0, 3).toLowerCase()}. ${SLOT_WORD[p.slotId]}`).join(', ')}` : 'Prévoir des restes');
+              })())),
           // Ouverte avec les portions de ce repas (« ?portions=7 »).
           r && h('a', { class: 'icon-btn', href: `#/recette/${r.id}${e.servings ? `?portions=${e.servings}` : ''}`, 'aria-label': 'Voir la recette', onclick: () => s.close() }, icon('book', 18)),
           h('button', { class: 'icon-btn', 'aria-label': 'Retirer', onclick: () => save(entries.filter((_, j) => j !== i)) }, icon('close', 18)));
@@ -234,7 +243,9 @@ export function openSlot(date, slotId) {
       }, '👧 Même chose que les grands'),
       selectionRow(),
       freeForm,
-      h('div', { class: 'chips' }, QUICK_TEXTS.map((t) => h('button', { class: 'chip-select', onclick: () => addText(t) }, t))),
+      h('div', { class: 'chips' },
+        h('button', { class: 'chip-select leftover-chip', onclick: () => leftoverSheet(date, slotId, (e) => save([...entries, e])) }, '♻️ Des restes'),
+        QUICK_TEXTS.map((t) => h('button', { class: 'chip-select', onclick: () => addText(t) }, t))),
       ideaRow(),
       h('span', { class: 'field-label' }, '📖 Une recette'),
       searchRow,
@@ -351,6 +362,72 @@ function taskLine(date, t) {
     }, h('span', { class: 'task-moment' }, MOMENT_WORD[t.moment]), h('span', null, '📝 ', t.text)));
 }
 
+// --- Restes ------------------------------------------------------------------------------
+
+/** « ♻️ Des restes » : choisir un plat des jours d'avant. */
+function leftoverSheet(date, slotId, onPick) {
+  const list = leftoverCandidates(store.plans, date, slotId);
+  const slot = SLOTS.find((x) => x.id === slotId);
+  const servings = defaultServings(slotId);
+  const s = sheet(h('div', { class: 'stack' },
+    list.length
+      ? h('div', { class: 'slot-results' }, list.map((c) => {
+        const r = c.entry.recipeId ? store.recipe(c.entry.recipeId) : null;
+        return h('button', { class: 'slot-result', onclick: () => { s.close(); onPick(leftoverOf(c.entry, { date: c.date, slotId: c.slotId }, servings)); } },
+          r ? thumbWithSource(r, 40) : h('span', { class: 'thumb thumb-empty', style: { width: '40px', height: '40px' } }, '✏️'),
+          h('span', { class: 'grow' }, entryLabel(c.entry, store.byId), h('small', { class: 'muted block' }, `${dayName(c.date).toLowerCase()} ${dayNumber(c.date)} · ${SLOT_WORD[c.slotId]}`)),
+          icon('plus', 18));
+      }))
+      : h('p', { class: 'muted small' }, 'Aucun plat dans les 7 derniers jours du planning.'),
+    h('button', { class: 'btn ghost', onclick: () => { s.close(); onPick({ text: 'Restes' }); } }, '♻️ Des restes, sans préciser')),
+  { title: `Restes pour ${dayName(date).toLowerCase()} ${dayNumber(date)} · ${slot.child ? 'Poupette' : slot.label.toLowerCase()}`, className: 'tall' });
+}
+
+/** « ♻️ Prévoir des restes » : où les manger, combien de portions (ajoutées au plat cuisiné). */
+function planLeftoversSheet(mealDate, mealSlot, entry, addToOriginal) {
+  let date = mealSlot.startsWith('midi') ? mealDate : addDays(mealDate, 1);
+  let target = mealSlot.startsWith('midi') ? 'soir' : 'midi';
+  let portions = store.settings.familyServings;
+  let addPortions = true;
+  const days = Array.from({ length: 7 }, (_, i) => addDays(mealDate, i));
+  const body = h('div', { class: 'stack' });
+  const portionStepper = stepper({ value: portions, min: 0.5, max: 30, step: 0.5, label: 'Portions de restes', format: fmtServings, onchange: (v) => { portions = v; draw(); } });
+  function draw() {
+    const same = date === mealDate && target === mealSlot;
+    setChildren(body,
+      h('p', { class: 'small muted' }, `${entryLabel(entry, store.byId)} (${fmtServings(entry.servings)}), ${dayName(mealDate).toLowerCase()} ${dayNumber(mealDate)} ${SLOT_WORD[mealSlot]}.`),
+      h('span', { class: 'field-label' }, 'Les restes seront mangés…'),
+      h('div', { class: 'plan-days' }, days.map((d) => h('button', {
+        class: `day-pill ${d === date ? 'selected' : ''}`, onclick: () => { date = d; draw(); },
+      }, h('small', null, dayName(d).slice(0, 3)), h('strong', null, String(dayNumber(d)))))),
+      segmented(SLOTS.map((x) => ({ value: x.id, label: x.child ? `Poupette ${x.id === 'midiP' ? 'midi' : 'soir'}` : x.label })), target, (v) => {
+        target = v;
+        portions = SLOTS.find((x) => x.id === v).child ? store.settings.childServings : store.settings.familyServings;
+        portionStepper.setValue(portions);
+        draw();
+      }, { className: 'wrap-seg' }),
+      portionStepper,
+      h('label', { class: 'task-check' },
+        h('input', { type: 'checkbox', checked: addPortions, onchange: (ev) => { addPortions = ev.target.checked; draw(); } }),
+        h('span', null, addPortions ? `Cuisiner pour ${fmtServings(entry.servings + portions)} (${String(entry.servings).replace('.', ',')} + ${String(portions).replace('.', ',')} de restes)` : 'Ne pas changer les portions du plat')),
+      h('button', {
+        class: 'btn primary big', disabled: same, onclick: async () => {
+          s.close();
+          try {
+            await store.setSlot(date, target, [...slotEntries(store.plans, date, target), leftoverOf(entry, { date: mealDate, slotId: mealSlot }, portions)]);
+            if (addPortions) await addToOriginal(portions);
+            toast(`Restes prévus : ${dayName(date).toLowerCase()} ${dayNumber(date)} ${SLOT_WORD[target]}.`);
+          } catch (e) {
+            toast(`Non enregistré : ${e.message}`);
+          }
+        },
+      }, '♻️ Prévoir ces restes'),
+      same && h('p', { class: 'small muted' }, 'Choisis un autre repas que celui du plat.'));
+  }
+  draw();
+  const s = sheet(body, { title: 'Prévoir des restes' });
+}
+
 // --- Vue Semaine -------------------------------------------------------------------
 
 /** Petite image d'un plat avec, en bas à droite, le symbole de sa source (🥕, C vert…). */
@@ -434,6 +511,7 @@ export function weekView(_, query = {}) {
           // avec le petit symbole de sa provenance.
           r?.thumb ? withSource(r, h('img', { src: r.thumb, alt: '' }))
             : e.recipeId ? withSource(r, h('span', { class: 'cday-recipe-icon', title: 'Recette', 'aria-label': 'Recette' }, icon('book', 13))) : null,
+          e.leftover && h('span', { class: 'cday-leftover', 'aria-hidden': 'true' }, '♻️'),
           entryLabel(e, store.byId),
           e.prep && h('span', { class: 'cday-prep-mark', title: `Préparé à l’avance : ${prepLabel(e.prep).toLowerCase()}`, 'aria-label': 'Préparé à l’avance' }, icon('clock', 13)));
       })))));

@@ -28,7 +28,7 @@ describe('statistiques', () => {
     expect(s.topRecipes[0]).toEqual({ key: 'soupe', label: 'Soupe de potiron', count: 3 });
     expect(s.categories.map((c) => [c.key, c.count])).toEqual([['plat', 3], ['dessert', 1], ['entree', 1]]);
     expect(s.sources[0]).toEqual({ key: 'cookidoo', count: 3 });
-    expect(s.texts[0]).toEqual({ key: 'restes', label: 'Restes', count: 2 });
+    expect(s.texts[0]).toEqual({ key: 'restes', label: '♻️ Restes', count: 2 });
     expect(s.ingredients.map((i) => i.label)).toEqual(['poireaux', 'potiron', 'œufs', 'tomates']);
   });
   it('saison et semaines', () => {
