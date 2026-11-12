@@ -7,7 +7,8 @@
 //   prep : { offset, moment, done } — à préparer `offset` jours avant, le matin / midi / soir.
 // Un jour peut aussi avoir :
 //   order : ['task:t1', 'midiP', 'midi', 'prep:…', 'soir', 'soirP'] — ordre d'affichage des repas et tâches ce jour-là ;
-//   tasks : [{ id, text, moment, done }] — tâches (« Sortir la viande »), pas des repas.
+//   tasks : [{ id, text, moment, done }] — tâches (« Sortir la viande »), pas des repas ;
+//           ou { id, recipeId, title, servings, moment, done } — recette à préparer, repas pas encore choisi.
 import { addDays, daysBetween, weekStart } from './dates.js';
 
 export const SLOTS = [
@@ -190,7 +191,7 @@ export function prepTasksOn(plans, date) {
 
 /** Tâches du jour : préparations et tâches libres, du matin au soir. */
 export function tasksOn(plans, date) {
-  const own = (plans[weekStart(date)]?.days?.[date]?.tasks || []).map((t, index) => ({ kind: 'todo', index, ...t, moment: t.moment || 'matin', done: Boolean(t.done) }));
+  const own = (plans[weekStart(date)]?.days?.[date]?.tasks || []).map((t, index) => ({ kind: t.recipeId ? 'prepAlone' : 'todo', index, ...t, moment: t.moment || 'matin', done: Boolean(t.done) }));
   return [...prepTasksOn(plans, date), ...own]
     .sort((a, b) => (MOMENT_RANK[a.moment] ?? 0) - (MOMENT_RANK[b.moment] ?? 0) || (a.mealDate || '').localeCompare(b.mealDate || ''));
 }

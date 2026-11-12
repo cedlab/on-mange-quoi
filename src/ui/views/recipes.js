@@ -66,6 +66,12 @@ function card(r) {
     bookmarkButton(r, { className: 'row-end' }));
 }
 
+/** Tout ce qui réduit ou change la liste : recherche, catégories, filtres, tri. */
+function allActiveCount() {
+  return (String(criteria.q || '').trim() ? 1 : 0) + (criteria.categories?.length ? 1 : 0)
+    + activeFilterCount() + (criteria.sort && criteria.sort !== 'az' ? 1 : 0);
+}
+
 function activeFilterCount() {
   return (criteria.minRating ? 1 : 0) + (criteria.maxMinutes ? 1 : 0) + (criteria.sourceTypes?.length || 0)
     + (criteria.tags?.length || 0) + (criteria.uncategorized ? 1 : 0);
@@ -121,6 +127,7 @@ function filtersSheet(onChange) {
 export function recipesView() {
   const results = h('div', { class: 'recipe-list' });
   const countEl = h('p', { class: 'small muted list-count' });
+  const resetBar = h('div', { class: 'reset-bar hidden' });
   const catChips = h('div', { class: 'filters' });
   const filterBtn = h('button', { class: 'icon-btn badge-host', 'aria-label': 'Filtres et tri', onclick: () => filtersSheet(update) }, icon('filter'));
   let observer = null;
@@ -153,6 +160,19 @@ export function recipesView() {
 
   function update() {
     drawCats();
+    // Recherche, catégorie, entonnoir, tri : une ligne pour tout remettre à zéro.
+    const all = allActiveCount();
+    resetBar.classList.toggle('hidden', !all);
+    setChildren(resetBar,
+      h('span', { class: 'grow' }, `${all} filtre${all > 1 ? 's' : ''} actif${all > 1 ? 's' : ''}`),
+      h('button', {
+        class: 'btn small ghost', onclick: () => {
+          criteria = { sort: 'az' };
+          search.value = '';
+          saveCriteria();
+          update();
+        },
+      }, icon('close', 16), 'Tout réinitialiser'));
     const n = activeFilterCount();
     filterBtn.classList.toggle('has-badge', n > 0);
     filterBtn.dataset.badge = n || '';
@@ -208,6 +228,7 @@ export function recipesView() {
     }),
     h('div', { class: 'search-bar' }, h('div', { class: 'search-wrap' }, icon('search', 18), search), filterBtn),
     catChips,
+    resetBar,
     countEl,
     results);
   return { el, cleanup: () => { unsub(); observer?.disconnect(); } };
