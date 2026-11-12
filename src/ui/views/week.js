@@ -16,6 +16,7 @@ import { sourceType } from '../../logic/sources.js';
 import { micButton } from '../voice.js';
 import { plannedFromSelection, selectionLabel } from './selection.js';
 import { deliverFile } from '../deliver-file.js';
+import { makeSortable } from '../drag-sort.js';
 
 let currentWeek = null;
 let selecting = false;
@@ -91,6 +92,10 @@ export function openSlot(date, slotId) {
     } catch (e) {
       toast(`Non enregistré : ${e.message}`);
     }
+  };
+  const sortable = (list) => {
+    makeSortable(list, { onReorder: (from, to) => save(moveEntry(entries, from, to)) });
+    return list;
   };
   const addRecipe = (r) => save([...entries, { recipeId: r.id, title: r.title, servings: defaultServings(slotId) }]);
   const addText = (text) => text && save([...entries, { text }]);
@@ -191,13 +196,11 @@ export function openSlot(date, slotId) {
   function draw() {
     const family = slot.child ? slotEntries(store.plans, date, slotId === 'midiP' ? 'midi' : 'soir').filter((e) => e.recipeId) : [];
     setChildren(body,
-      entries.length > 0 && h('div', { class: 'slot-entries' }, entries.map((e, i) => {
+      entries.length > 0 && sortable(h('div', { class: 'slot-entries' }, entries.map((e, i) => {
         const r = e.recipeId ? store.recipe(e.recipeId) : null;
         return h('div', { class: 'slot-entry' },
-          // Plusieurs plats : flèches pour choisir leur ordre.
-          entries.length > 1 && h('div', { class: 'reorder' },
-            h('button', { class: 'reorder-btn', 'aria-label': 'Monter', disabled: i === 0, onclick: () => save(moveEntry(entries, i, -1)) }, icon('up', 18)),
-            h('button', { class: 'reorder-btn', 'aria-label': 'Descendre', disabled: i === entries.length - 1, onclick: () => save(moveEntry(entries, i, 1)) }, icon('down', 18))),
+          // Plusieurs plats : poignée à glisser pour choisir leur ordre.
+          entries.length > 1 && h('span', { class: 'drag-handle', title: 'Glisser pour déplacer', 'aria-label': 'Glisser pour déplacer' }, icon('grip', 20)),
           r ? thumbWithSource(r, 44) : h('span', { class: 'thumb thumb-empty', style: { width: '44px', height: '44px' } }, e.text ? '✏️' : '🍽️'),
           h('div', { class: 'grow' },
             h('strong', null, entryLabel(e, store.byId)),
@@ -210,7 +213,7 @@ export function openSlot(date, slotId) {
           // Ouverte avec les portions de ce repas (« ?portions=7 »).
           r && h('a', { class: 'icon-btn', href: `#/recette/${r.id}${e.servings ? `?portions=${e.servings}` : ''}`, 'aria-label': 'Voir la recette', onclick: () => s.close() }, icon('book', 18)),
           h('button', { class: 'icon-btn', 'aria-label': 'Retirer', onclick: () => save(entries.filter((_, j) => j !== i)) }, icon('close', 18)));
-      })),
+      }))),
       slot.child && family.length > 0 && h('button', {
         class: 'btn ghost', onclick: () => save([...entries, ...family.map((e) => ({ ...e, servings: store.settings.childServings }))]),
       }, '👧 Même chose que les grands'),
