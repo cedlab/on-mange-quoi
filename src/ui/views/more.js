@@ -135,6 +135,7 @@ export function moreView() {
       }, icon('logout'))),
     h('div', { class: 'menu' },
       item('#/membres', 'users', 'Membres de la famille', 'Qui peut utiliser l’app'),
+      item('#/stats', 'chart', 'Stats', 'Ce qu’on mange, d’après le planning'),
       item('#/reglages', 'calendar', 'Réglages du planning', `${store.settings.familyServings} pers. par repas, Poupette : ${String(store.settings.childServings).replace('.', ',')} portion`),
       item('#/recette/coller', 'edit', 'Coller une recette', 'Depuis tes notes, un message, une page web'),
       item('#/import-lien', 'link', 'Import par lien', store.settings.importProxy ? 'Relais installé ✅' : 'Installer le relais (Chronodrive, Marmiton…)'),

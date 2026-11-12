@@ -51,7 +51,6 @@ const TABS = [
   { id: 'week', href: '#/semaine', label: 'Planning', icon: 'calendar' },
   { id: 'recipes', href: '#/', label: 'Recettes', icon: 'book' },
   { id: 'selection', href: '#/envies', label: 'Mes envies', icon: 'bookmark' },
-  { id: 'stats', href: '#/stats', label: 'Stats', icon: 'chart' },
   { id: 'more', href: '#/plus', label: 'Plus', icon: 'more' },
 ];
 

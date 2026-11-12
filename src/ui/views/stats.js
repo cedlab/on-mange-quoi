@@ -161,5 +161,5 @@ export function statsView() {
 
   const unsub = store.subscribe((k) => (k === 'plans' || k === 'recipes') && draw());
   draw();
-  return { el: h('div', { class: 'page' }, header('Statistiques'), body), cleanup: unsub };
+  return { el: h('div', { class: 'page' }, header('Statistiques', { back: '#/plus' }), body), cleanup: unsub };
 }

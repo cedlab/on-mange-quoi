@@ -54,6 +54,13 @@ export function computeStats({ plans = {}, recipes = new Map(), from, to }) {
         byWeek.set(week, (byWeek.get(week) || 0) + 1);
         const wd = fromISO(date).getDay();
         byWeekday.set(wd, (byWeekday.get(wd) || 0) + 1);
+        // Restes : un repas, mais pas une nouvelle fois où l'on cuisine la recette.
+        if (e.leftover || (e.text && normalizeText(e.text) === 'restes')) {
+          const cur = byText.get('restes') || { label: '♻️ Restes', count: 0 };
+          cur.count += 1;
+          byText.set('restes', cur);
+          continue;
+        }
         if (e.text) {
           const k = normalizeText(e.text);
           const cur = byText.get(k) || { label: e.text, count: 0 };
