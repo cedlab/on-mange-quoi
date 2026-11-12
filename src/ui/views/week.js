@@ -1,7 +1,7 @@
 // Onglet « Semaine » : planning du samedi au vendredi (Midi / Poupette / Soir / Poupette).
 import { store } from '../../app.js';
 import {
-  addDays, dayName, dayNumber, daysBetween, formatLong, formatRange, formatShort, todayISO, weekDays, weekStart, weeksBetween,
+  addDays, dayName, dayNumber, daysBetween, formatRange, formatShort, todayISO, weekDays, weekStart, weeksBetween,
 } from '../../logic/dates.js';
 import { entryLabel, plannedDays, QUICK_TEXTS, SLOTS, slotEntries } from '../../logic/plan.js';
 import { filterRecipes, normalizeText } from '../../logic/recipes.js';
@@ -18,15 +18,6 @@ import { plannedFromSelection, selectionLabel } from './selection.js';
 import { deliverFile } from '../deliver-file.js';
 
 let currentWeek = null;
-const VIEW_KEY = 'omq.weekView';
-function loadView() {
-  try {
-    return localStorage.getItem(VIEW_KEY) || 'compact';
-  } catch {
-    return 'compact';
-  }
-}
-let viewMode = loadView();
 let selecting = false;
 const selected = new Set();
 
@@ -242,14 +233,6 @@ function withSource(r, img) {
     h('span', { class: 'src-badge mini', title: sourceType(t).label, role: 'img', 'aria-label': `Source : ${sourceType(t).label}` }, sourceIcon(t)));
 }
 
-function entryChip(e) {
-  const r = e.recipeId ? store.recipe(e.recipeId) : null;
-  return h('span', { class: `meal ${e.text ? 'meal-text' : ''}` },
-    withSource(r, r?.thumb ? h('img', { class: 'meal-thumb', src: r.thumb, alt: '' }) : h('span', { class: 'meal-thumb meal-emoji' }, e.text ? '✏️' : icon('book', 15))),
-    h('span', { class: 'meal-title' }, entryLabel(e, store.byId)),
-    e.recipeId && e.servings && h('span', { class: 'meal-servings' }, String(e.servings).replace('.', ',')));
-}
-
 export function weekView(_, query = {}) {
   const today = todayISO();
   if (query.date) currentWeek = weekStart(query.date);
@@ -284,25 +267,6 @@ export function weekView(_, query = {}) {
           },
         }, 'Vider')),
       days.length > 1 && h('p', { class: 'small muted' }, `Du ${formatShort(a)} au ${formatShort(b)}`));
-  }
-
-  function dayCard(date) {
-    const isSel = selected.has(date);
-    const card = h('section', { class: `day-card ${date === today ? 'today' : ''} ${date < today ? 'past' : ''} ${isSel ? 'selected' : ''}`, id: `jour-${date}` },
-      h('header', {
-        class: 'day-head', onclick: selecting ? () => { if (isSel) selected.delete(date); else selected.add(date); draw(); } : null,
-      },
-        selecting && h('span', { class: `day-check ${isSel ? 'on' : ''}` }, isSel ? icon('check', 16) : null),
-        h('div', { class: 'day-date' }, h('span', { class: 'day-num' }, String(dayNumber(date))), h('span', null, formatLong(date).replace(/^\S+ \d+ /, ''))),
-        h('strong', { class: 'day-name' }, dayName(date)),
-        date === today && h('span', { class: 'badge' }, 'Aujourd’hui')),
-      SLOTS.map((slot) => {
-        const entries = slotEntries(store.plans, date, slot.id);
-        return h('button', { class: `slot-row ${slot.child ? 'child' : ''} ${entries.length ? '' : 'empty'}`, onclick: () => openSlot(date, slot.id) },
-          h('span', { class: 'slot-label' }, slot.child ? '👧 Poupette' : slot.label),
-          h('span', { class: 'slot-meals' }, entries.length ? entries.map(entryChip) : h('span', { class: 'slot-add' }, '+ Ajouter')));
-      }));
-    return card;
   }
 
   const toggleSel = (date) => {
@@ -354,7 +318,6 @@ export function weekView(_, query = {}) {
   function draw() {
     const days = weekDays(currentWeek);
     const end = days[6];
-    const compact = viewMode === 'compact';
     const planned = plannedDays(store.plans);
     setChildren(content,
       h('div', { class: 'week-nav' },
@@ -367,16 +330,6 @@ export function weekView(_, query = {}) {
         }, h('strong', null, `${formatShort(currentWeek).replace(/^\S+ /, '')} → ${formatShort(end).replace(/^\S+ /, '')}`), h('small', null, 'Semaine · toucher pour le calendrier')),
         h('button', { class: 'icon-btn flip', 'aria-label': 'Semaine suivante', onclick: () => go(addDays(currentWeek, 7)) }, icon('back', 20))),
       currentWeek !== weekStart(today) && h('button', { class: 'link-btn', onclick: () => go(weekStart(today)) }, '↩︎ Revenir à cette semaine'),
-      !compact && h('div', { class: 'day-strip' }, days.map((d) => h('button', {
-        class: `day-pill ${d === today ? 'today' : ''} ${planned.has(d) ? 'planned' : ''} ${selected.has(d) ? 'selected' : ''}`,
-        onclick: () => {
-          if (selecting) {
-            if (selected.has(d)) selected.delete(d);
-            else selected.add(d);
-            draw();
-          } else document.getElementById(`jour-${d}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        },
-      }, h('small', null, dayName(d).slice(0, 3)), h('strong', null, String(dayNumber(d)))))),
       !selecting && h('div', { class: 'week-actions' },
         h('button', { class: 'btn small primary', onclick: () => pdfMenu(currentWeek) }, '📄 Menu PDF'),
         h('button', { class: 'btn small ghost', onclick: () => { selecting = true; draw(); } }, icon('check', 18), 'Sélectionner'),
@@ -390,29 +343,15 @@ export function weekView(_, query = {}) {
             ],
           }),
         }, icon('calendar', 18), 'Période')),
-      compact ? h('div', { class: 'cweek' }, days.map(compactDay)) : days.map(dayCard));
+      h('div', { class: 'cweek' }, days.map(compactDay)));
     drawSelection();
-    viewBtn.setAttribute('aria-label', compact ? 'Vue détaillée' : 'Vue compacte');
-    viewBtn.title = compact ? 'Vue détaillée' : 'Vue compacte';
   }
 
-  const viewBtn = h('button', {
-    class: 'icon-btn', onclick: () => {
-      viewMode = viewMode === 'compact' ? 'detail' : 'compact';
-      try {
-        localStorage.setItem(VIEW_KEY, viewMode);
-      } catch {
-        /* ignoré */
-      }
-      draw();
-    },
-  }, icon('layers'));
   const unsub = store.subscribe((k) => (k === 'plans' || k === 'recipes') && draw());
   draw();
   return {
     el: h('div', { class: 'page' },
       header('Planning', {
-        lead: viewBtn,
         actions: [
           h('button', { class: 'icon-btn', 'aria-label': 'Menu en PDF', onclick: () => pdfMenu(currentWeek) }, icon('download')),
           h('a', { class: 'icon-btn', href: '#/reglages', 'aria-label': 'Réglages du planning' }, icon('users')),
