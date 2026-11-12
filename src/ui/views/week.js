@@ -4,7 +4,7 @@ import {
   addDays, dayName, dayNumber, daysBetween, formatRange, formatShort, todayISO, weekDays, weekStart, weeksBetween,
 } from '../../logic/dates.js';
 import {
-  dayItems, dayOrder, entryLabel, leftoverCandidates, leftoverOf, leftoversFrom, mealLists, MOMENTS, moveEntry, plannedDays, prepLabel, QUICK_TEXTS, reorderShown, SLOTS, slotEntries, tasksOn,
+  dayItems, dayOrder, entryLabel, leftoverCandidates, leftoverOf, leftoversFrom, mealLists, MOMENTS, moveEntry, plannedDays, prepLabel, QUICK_TEXTS, reorderShown, SLOTS, slotEntries,
 } from '../../logic/plan.js';
 import { filterRecipes, normalizeText } from '../../logic/recipes.js';
 import { suggest } from '../../logic/suggest.js';
@@ -300,9 +300,16 @@ function prepSheet(mealDate, entry, onSave) {
   const s = sheet(body, { title: 'Préparer à l’avance' });
 }
 
+/** Tâches enregistrées d'un jour, telles quelles. */
+function ownTasks(date) {
+  return store.plans[weekStart(date)]?.days?.[date]?.tasks || [];
+}
+const newTaskId = () => `t${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
+const shortDay = (d) => `${dayName(d).toLowerCase()} ${dayNumber(d)}`;
+const gap = (from, to) => daysBetween(from, to).length - 1; // jours de from à to
+
 async function addTask(date, text, moment) {
-  const own = tasksOn(store.plans, date).filter((t) => t.kind === 'todo').map(({ kind, index, ...t }) => t);
-  await store.setDayTasks(date, [...own, { id: `t${Date.now().toString(36)}`, text, moment, done: false }]);
+  await store.setDayTasks(date, [...ownTasks(date), { id: newTaskId(), text, moment, done: false }]);
 }
 
 /** Nouvelle tâche (« Sortir la viande du congélateur »), depuis le + d'un jour. */
@@ -331,9 +338,187 @@ async function setTaskDone(date, t, done) {
     const list = slotEntries(store.plans, t.mealDate, t.slotId);
     await store.setSlot(t.mealDate, t.slotId, list.map((x, j) => (j === t.index ? { ...x, prep: { ...x.prep, done } } : x)));
   } else {
-    const own = tasksOn(store.plans, date).filter((x) => x.kind === 'todo').map(({ kind, index, ...x }) => x);
-    await store.setDayTasks(date, own.map((x, j) => (j === t.index ? { ...x, done } : x)));
+    await store.setDayTasks(date, ownTasks(date).map((x, j) => (j === t.index ? { ...x, done } : x)));
   }
+}
+
+/** Choix d'un repas : jour (pastilles), repas, portions. Renvoie { el, value() }. */
+function mealPicker({ from, date, slotId = 'soir', servings, count = 7 }) {
+  let d = date;
+  let slot = slotId;
+  let n = servings ?? defaultServings(slotId);
+  const el = h('div', { class: 'stack tight' });
+  const portions = stepper({ value: n, min: 0.5, max: 30, step: 0.5, label: 'Portions', format: fmtServings, onchange: (v) => { n = v; } });
+  const days = Array.from({ length: count }, (_, i) => addDays(from, i));
+  function draw() {
+    setChildren(el,
+      h('div', { class: 'plan-days' }, days.map((x) => h('button', {
+        type: 'button', class: `day-pill ${x === d ? 'selected' : ''}`, onclick: () => { d = x; draw(); },
+      }, h('small', null, dayName(x).slice(0, 3)), h('strong', null, String(dayNumber(x)))))),
+      segmented(SLOTS.map((x) => ({ value: x.id, label: x.child ? `Poupette ${x.id === 'midiP' ? 'midi' : 'soir'}` : x.label })), slot, (v) => {
+        slot = v;
+        n = defaultServings(v);
+        portions.setValue(n);
+      }, { className: 'wrap-seg' }),
+      portions);
+  }
+  draw();
+  return { el, value: () => ({ date: d, slotId: slot, servings: n }) };
+}
+
+/** Recette préparée un jour et mangée à un repas : crée le repas avec son rappel. */
+async function planPrepared(prepDate, moment, recipe, meal) {
+  const entry = { recipeId: recipe.id, title: recipe.title, servings: meal.servings, prep: { offset: gap(prepDate, meal.date), moment, done: false } };
+  await store.setSlot(meal.date, meal.slotId, [...slotEntries(store.plans, meal.date, meal.slotId), entry]);
+}
+
+/** ‹ jour › : avancer ou reculer d'un jour. */
+function dayStepper(day, { onPrev, onNext, prevDisabled, nextDisabled }) {
+  return h('div', { class: 'day-stepper' },
+    h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Un jour avant', disabled: prevDisabled, onclick: onPrev }, icon('back', 20)),
+    h('strong', null, `${dayName(day)} ${dayNumber(day)}`),
+    h('button', { type: 'button', class: 'icon-btn flip', 'aria-label': 'Un jour après', disabled: nextDisabled, onclick: onNext }, icon('back', 20)));
+}
+
+/** Toucher une ligne « À préparer » : changer le jour, le moment, cocher, ouvrir la recette… */
+function prepEditSheet(t) {
+  const body = h('div', { class: 'stack' });
+  let { offset, moment } = t.entry.prep;
+  let done = Boolean(t.entry.prep.done);
+  const r = store.recipe(t.entry.recipeId);
+  const save = (prep) => {
+    const list = slotEntries(store.plans, t.mealDate, t.slotId);
+    return store.setSlot(t.mealDate, t.slotId, list.map((x, j) => (j === t.index ? withPrep(x, prep) : x)))
+      .catch((e) => toast(`Non enregistré : ${e.message}`));
+  };
+  const apply = () => { save({ offset, moment, done }); draw(); };
+  function draw() {
+    const day = addDays(t.mealDate, -offset);
+    setChildren(body,
+      h('p', { class: 'small muted' }, `Pour ${shortDay(t.mealDate)} ${SLOT_WORD[t.slotId]}${t.entry.servings ? ` · ${fmtServings(t.entry.servings)}` : '.'}`),
+      h('span', { class: 'field-label' }, 'Je la prépare…'),
+      dayStepper(day, {
+        onPrev: () => { offset = Math.min(14, offset + 1); apply(); },
+        onNext: () => { offset = Math.max(0, offset - 1); apply(); },
+        prevDisabled: offset >= 14, nextDisabled: offset <= 0,
+      }),
+      segmented(MOMENTS.map((m) => ({ value: m.id, label: m.label })), moment, (v) => { moment = v; apply(); }),
+      h('button', { class: `btn ${done ? 'ghost' : 'primary'}`, onclick: () => { done = !done; apply(); } }, icon('check', 18), done ? 'Fait ✓ (annuler)' : 'Marquer comme fait'),
+      r && h('a', { class: 'btn ghost', href: `#/recette/${r.id}${t.entry.servings ? `?portions=${t.entry.servings}` : ''}`, onclick: () => s.close() }, icon('book', 18), `Voir la recette${t.entry.servings ? ` (${fmtServings(t.entry.servings)})` : ''}`),
+      h('button', { class: 'btn danger-ghost', onclick: () => { save(null); s.close(); } }, 'Retirer le rappel'));
+  }
+  draw();
+  const s = sheet(body, { title: `Préparation : ${entryLabel(t.entry, store.byId)}` });
+}
+
+/** Préparation sans repas choisi : changer de jour, rattacher à un repas, supprimer… */
+function prepAloneSheet(date, t) {
+  const body = h('div', { class: 'stack' });
+  let day = date;
+  let { moment } = t;
+  let done = t.done;
+  const r = store.recipe(t.recipeId);
+  const strip = ({ kind, index, ...x }) => x;
+  const item = () => ({ ...strip(t), moment, done });
+  // Déplacer d'un jour : retirée de l'ancien jour, ajoutée au nouveau.
+  const move = async (to) => {
+    const from = day;
+    day = to;
+    draw();
+    try {
+      await store.setDayTasks(from, ownTasks(from).filter((x) => x.id !== t.id));
+      await store.setDayTasks(to, [...ownTasks(to), item()]);
+    } catch (e) {
+      toast(`Non enregistré : ${e.message}`);
+    }
+  };
+  const update = () => store.setDayTasks(day, ownTasks(day).map((x) => (x.id === t.id ? item() : x))).catch((e) => toast(`Non enregistré : ${e.message}`));
+  let picker = null;
+  function draw() {
+    setChildren(body,
+      h('p', { class: 'small muted' }, 'Le repas n’est pas encore choisi.'),
+      h('span', { class: 'field-label' }, 'Je la prépare…'),
+      dayStepper(day, { onPrev: () => move(addDays(day, -1)), onNext: () => move(addDays(day, 1)) }),
+      segmented(MOMENTS.map((m) => ({ value: m.id, label: m.label })), moment, (v) => { moment = v; update(); }),
+      h('button', { class: `btn ${done ? 'ghost' : 'primary'}`, onclick: () => { done = !done; update(); draw(); } }, icon('check', 18), done ? 'Fait ✓ (annuler)' : 'Marquer comme fait'),
+      picker
+        ? h('div', { class: 'card stack tight' },
+          h('span', { class: 'field-label' }, 'Pour quel repas ?'), picker.el,
+          h('button', {
+            class: 'btn primary', onclick: async () => {
+              if (!r) return;
+              s.close();
+              try {
+                await planPrepared(day, moment, r, picker.value());
+                await store.setDayTasks(day, ownTasks(day).filter((x) => x.id !== t.id));
+                toast(`${r.title} : au menu ${shortDay(picker.value().date)} ${SLOT_WORD[picker.value().slotId]}.`);
+              } catch (e) {
+                toast(`Non enregistré : ${e.message}`);
+              }
+            },
+          }, 'Mettre au menu'))
+        : r && h('button', { class: 'btn ghost', onclick: () => { picker = mealPicker({ from: day, date: addDays(day, 1), servings: t.servings }); draw(); } }, icon('calendar', 18), 'Choisir le repas…'),
+      r && h('a', { class: 'btn ghost', href: `#/recette/${r.id}${t.servings ? `?portions=${t.servings}` : ''}`, onclick: () => s.close() }, icon('book', 18), 'Voir la recette'),
+      h('button', {
+        class: 'btn danger-ghost', onclick: async () => {
+          s.close();
+          await store.setDayTasks(day, ownTasks(day).filter((x) => x.id !== t.id)).catch((e) => toast(`Non enregistré : ${e.message}`));
+        },
+      }, 'Supprimer'));
+  }
+  draw();
+  const s = sheet(body, { title: `Préparation : ${r?.title || t.title || 'Recette'}` });
+}
+
+/** + d'un jour → « Préparer une recette » : la recette, le moment, puis pour quel repas. */
+function prepFirstSheet(date) {
+  const body = h('div', { class: 'stack' });
+  let recipe = null;
+  let moment = 'soir';
+  let picker = null;
+  let query = '';
+  const search = h('input', { class: 'input', type: 'search', placeholder: 'Chercher une recette…', autocomplete: 'off', oninput: () => { query = search.value; drawList(); } });
+  const list = h('div', { class: 'slot-results' });
+  function drawList() {
+    const found = normalizeText(query) ? filterRecipes(store.recipes, { q: query }).slice(0, 30)
+      : [...store.activeRecipes].sort((a, b) => (b.rating || 0) - (a.rating || 0) || a.title.localeCompare(b.title, 'fr')).slice(0, 15);
+    setChildren(list, found.map((r) => h('button', { class: 'slot-result', onclick: () => { recipe = r; picker = mealPicker({ from: date, date: addDays(date, 1) }); draw(); } },
+      recipeThumb(r, 40), h('span', { class: 'grow' }, r.title), icon('back', 18))),
+    !found.length && h('p', { class: 'muted small' }, 'Aucune recette trouvée.'));
+  }
+  function draw() {
+    if (!recipe) {
+      setChildren(body, h('div', { class: 'row gap' }, search, micButton(search, { onFinal: () => { query = search.value; drawList(); } })), list);
+      drawList();
+      return;
+    }
+    const create = async (meal) => {
+      s.close();
+      try {
+        if (meal) {
+          await planPrepared(date, moment, recipe, meal);
+          toast(`${recipe.title} : préparée ${shortDay(date)}, au menu ${shortDay(meal.date)} ${SLOT_WORD[meal.slotId]}.`);
+        } else {
+          await store.setDayTasks(date, [...ownTasks(date), { id: newTaskId(), recipeId: recipe.id, title: recipe.title, servings: store.settings.familyServings, moment, done: false }]);
+          toast(`${recipe.title} : à préparer ${shortDay(date)}.`);
+        }
+      } catch (e) {
+        toast(`Non enregistré : ${e.message}`);
+      }
+    };
+    setChildren(body,
+      h('div', { class: 'row gap' }, recipeThumb(recipe, 44), h('strong', { class: 'grow' }, recipe.title),
+        h('button', { class: 'btn small ghost', onclick: () => { recipe = null; draw(); } }, 'Changer')),
+      h('span', { class: 'field-label' }, `Je la prépare ${shortDay(date)}…`),
+      segmented(MOMENTS.map((m) => ({ value: m.id, label: m.label })), moment, (v) => { moment = v; }),
+      h('span', { class: 'field-label' }, 'Pour quel repas ?'),
+      picker.el,
+      h('button', { class: 'btn primary big', onclick: () => create(picker.value()) }, '🔪 Préparer et mettre au menu'),
+      h('button', { class: 'btn ghost', onclick: () => create(null) }, 'Pas encore décidé (juste la préparer)'));
+  }
+  draw();
+  const s = sheet(body, { title: `Préparer une recette · ${shortDay(date)}`, className: 'tall' });
+  setTimeout(() => search.focus(), 250);
 }
 
 /** Ligne « À préparer » ou tâche, avec sa case à cocher. */
@@ -342,21 +527,21 @@ function taskLine(date, t) {
     class: `task-box ${t.done ? 'done' : ''}`, 'aria-label': t.done ? 'Marquer à faire' : 'Marquer fait',
     onclick: () => setTaskDone(date, t, !t.done).catch((e) => toast(`Non enregistré : ${e.message}`)),
   }, t.done && icon('check', 14));
-  if (t.kind === 'prep') {
-    const r = store.recipe(t.entry.recipeId);
-    const forWhen = `pour ${dayName(t.mealDate).slice(0, 3).toLowerCase()}. ${SLOT_WORD[t.slotId]}`;
+  if (t.kind === 'prep' || t.kind === 'prepAlone') {
+    const label = t.kind === 'prep' ? entryLabel(t.entry, store.byId) : (store.recipe(t.recipeId)?.title || t.title || 'Recette');
+    const servings = t.kind === 'prep' ? t.entry.servings : t.servings;
+    const forWhen = t.kind === 'prep' ? `pour ${dayName(t.mealDate).slice(0, 3).toLowerCase()}. ${SLOT_WORD[t.slotId]}` : 'repas pas encore choisi';
     return h('div', { class: `cday-task ${t.done ? 'done' : ''}` }, toggle,
-      h('a', { class: 'task-text', href: r ? `#/recette/${r.id}${t.entry.servings ? `?portions=${t.entry.servings}` : ''}` : null },
+      h('button', { class: 'task-text', onclick: () => (t.kind === 'prep' ? prepEditSheet(t) : prepAloneSheet(date, t)) },
         h('span', { class: 'task-moment' }, MOMENT_WORD[t.moment]),
-        h('span', null, '🔪 À préparer : ', h('strong', null, entryLabel(t.entry, store.byId))),
-        h('small', null, ` · ${forWhen}${t.entry.servings ? ` · ${fmtServings(t.entry.servings)}` : ''}`)));
+        h('span', null, '🔪 À préparer : ', h('strong', null, label)),
+        h('small', null, ` · ${forWhen}${servings ? ` · ${fmtServings(servings)}` : ''}`)));
   }
   return h('div', { class: `cday-task ${t.done ? 'done' : ''}` }, toggle,
     h('button', {
       class: 'task-text', onclick: async () => {
         if (await confirmDialog(`Supprimer la tâche « ${t.text} » ?`, { ok: 'Supprimer', danger: true })) {
-          const own = tasksOn(store.plans, date).filter((x) => x.kind === 'todo').map(({ kind, index, ...x }) => x);
-          await store.setDayTasks(date, own.filter((_, j) => j !== t.index));
+          await store.setDayTasks(date, ownTasks(date).filter((_, j) => j !== t.index));
         }
       },
     }, h('span', { class: 'task-moment' }, MOMENT_WORD[t.moment]), h('span', null, '📝 ', t.text)));
@@ -490,6 +675,10 @@ export function weekView(_, query = {}) {
           h('small', null, entries.length ? entries.map((e) => entryLabel(e, store.byId)).join(' · ') : 'Rien de prévu')),
         icon('back', 18));
     }),
+    h('button', { class: 'menu-item', onclick: () => { s.close(); prepFirstSheet(date); } },
+      h('span', { class: 'menu-icon' }, '🔪'),
+      h('span', { class: 'grow' }, 'Préparer une recette', h('small', null, 'Ce jour-là, pour un repas plus tard (brownie, tiramisu…)')),
+      icon('back', 18)),
     h('button', { class: 'menu-item', onclick: () => { s.close(); taskSheet(date); } },
       h('span', { class: 'menu-icon' }, '📝'),
       h('span', { class: 'grow' }, 'Une tâche', h('small', null, 'Pas un repas : sortir la viande, acheter le pain…')),

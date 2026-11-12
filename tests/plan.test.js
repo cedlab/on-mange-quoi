@@ -181,3 +181,12 @@ describe('tâches placées parmi les repas d’un jour', () => {
     expect(keys.indexOf('task:c')).toBe(keys.indexOf('soir') - 1);
   });
 });
+
+describe('préparation sans repas choisi', () => {
+  it('est une tâche « à préparer » rattachée à une recette', async () => {
+    const { tasksOn, dayItems } = await import('../src/logic/plan.js');
+    const plans = { '2026-11-14': { days: { '2026-11-16': { tasks: [{ id: 'p1', recipeId: 'b', title: 'Brownie', servings: 4, moment: 'soir' }] } } } };
+    expect(tasksOn(plans, '2026-11-16')).toMatchObject([{ kind: 'prepAlone', recipeId: 'b', moment: 'soir' }]);
+    expect(dayItems(plans, '2026-11-16').map((i) => i.key)).toEqual(['midi', 'midiP', 'task:p1', 'soir', 'soirP']);
+  });
+});

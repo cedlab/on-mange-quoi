@@ -2663,3 +2663,35 @@ code {
 .block {
   display: block;
 }
+
+/* Recettes : remise à zéro des filtres */
+.reset-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 16px 8px;
+  padding: 6px 6px 6px 14px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  color: var(--accent);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+.reset-bar.hidden {
+  display: none;
+}
+
+.day-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--surface-2);
+}
+.day-stepper strong {
+  flex: 1;
+  text-align: center;
+  font-size: 1.05rem;
+}
