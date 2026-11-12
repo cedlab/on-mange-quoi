@@ -135,3 +135,15 @@ describe('icône d’un mode Thermomix', () => {
     expect('Bien mélanger le sucre.'.match(new RegExp(TM_SETTING.source, 'gi'))).toBeNull();
   });
 });
+
+describe('recette ouverte depuis le planning', () => {
+  it('donne le facteur des portions du repas', async () => {
+    const { factorForPlannedServings } = await import('../src/logic/quantities.js');
+    expect(factorForPlannedServings(4, '7')).toBe(1.75);
+    expect(factorForPlannedServings(6, '1,5')).toBe(0.25);
+    expect(factorForPlannedServings(4, '4')).toBe(1);
+    expect(factorForPlannedServings(null, '7')).toBeNull();
+    expect(factorForPlannedServings(4, 'abc')).toBeNull();
+    expect(factorForPlannedServings(4, '0')).toBeNull();
+  });
+});

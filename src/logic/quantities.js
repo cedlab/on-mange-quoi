@@ -195,6 +195,16 @@ export function factorForServings(baseServings, servings) {
   return servings / baseServings;
 }
 
+/**
+ * Recette ouverte depuis le planning (« ?portions=7 ») : facteur pour afficher
+ * les quantités de ce repas. null si la recette n'a pas de portions ou si la valeur est invalide.
+ */
+export function factorForPlannedServings(baseServings, portions) {
+  const n = Number(String(portions ?? '').replace(',', '.'));
+  if (!baseServings || !(n > 0) || n > 200) return null;
+  return n / baseServings;
+}
+
 /** Facteur quand on fixe la quantité d'un ingrédient (« j'ai 300 g de farine »). */
 export function factorForIngredient(ing, newQty) {
   if (!ing?.qty || !newQty || newQty <= 0) return 1;
