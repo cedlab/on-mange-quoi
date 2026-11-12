@@ -3,7 +3,7 @@ import { store } from '../../app.js';
 import {
   addDays, dayName, dayNumber, daysBetween, formatRange, formatShort, todayISO, weekDays, weekStart, weeksBetween,
 } from '../../logic/dates.js';
-import { entryLabel, plannedDays, QUICK_TEXTS, SLOTS, slotEntries } from '../../logic/plan.js';
+import { entryLabel, moveEntry, plannedDays, QUICK_TEXTS, SLOTS, slotEntries } from '../../logic/plan.js';
 import { filterRecipes, normalizeText } from '../../logic/recipes.js';
 import { suggest } from '../../logic/suggest.js';
 import { openCalendar } from '../calendar.js';
@@ -194,6 +194,10 @@ export function openSlot(date, slotId) {
       entries.length > 0 && h('div', { class: 'slot-entries' }, entries.map((e, i) => {
         const r = e.recipeId ? store.recipe(e.recipeId) : null;
         return h('div', { class: 'slot-entry' },
+          // Plusieurs plats : flèches pour choisir leur ordre.
+          entries.length > 1 && h('div', { class: 'reorder' },
+            h('button', { class: 'reorder-btn', 'aria-label': 'Monter', disabled: i === 0, onclick: () => save(moveEntry(entries, i, -1)) }, icon('up', 18)),
+            h('button', { class: 'reorder-btn', 'aria-label': 'Descendre', disabled: i === entries.length - 1, onclick: () => save(moveEntry(entries, i, 1)) }, icon('down', 18))),
           r ? thumbWithSource(r, 44) : h('span', { class: 'thumb thumb-empty', style: { width: '44px', height: '44px' } }, e.text ? '✏️' : '🍽️'),
           h('div', { class: 'grow' },
             h('strong', null, entryLabel(e, store.byId)),

@@ -71,3 +71,15 @@ describe('planning et courses', () => {
     expect(entryLabel({ recipeId: 'zzz', title: 'Ancienne' }, recipes)).toBe('Ancienne');
   });
 });
+
+describe('ordre des plats d’un repas', () => {
+  it('monte et descend un plat, sans sortir de la liste', async () => {
+    const { moveEntry } = await import('../src/logic/plan.js');
+    const l = [{ text: 'Entrée' }, { text: 'Plat' }, { text: 'Dessert' }];
+    expect(moveEntry(l, 2, -1).map((e) => e.text)).toEqual(['Entrée', 'Dessert', 'Plat']);
+    expect(moveEntry(l, 0, 1).map((e) => e.text)).toEqual(['Plat', 'Entrée', 'Dessert']);
+    expect(moveEntry(l, 0, -1).map((e) => e.text)).toEqual(['Entrée', 'Plat', 'Dessert']);
+    expect(moveEntry(l, 2, 1).map((e) => e.text)).toEqual(['Entrée', 'Plat', 'Dessert']);
+    expect(l.map((e) => e.text)).toEqual(['Entrée', 'Plat', 'Dessert']);
+  });
+});

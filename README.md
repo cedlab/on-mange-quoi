@@ -35,7 +35,7 @@ C'est une application web installable (PWA) : elle s'ouvre en plein écran et fo
 - **Corbeille** : une recette supprimée par erreur se restaure.
 - **Temps réel.** Une modification faite sur un téléphone apparaît aussitôt sur les autres.
 
-- **Planning** (onglet, étape 2) : planning du samedi au vendredi avec, pour chaque jour, Midi, Poupette, Soir et Poupette.
+- **Planning** (onglet, étape 2) : planning du samedi au vendredi avec, pour chaque jour, Midi, Poupette, Soir et Poupette. Quand un repas compte plusieurs plats, les flèches ▲ ▼ de sa fenêtre changent leur ordre.
   - Ajouter un repas : toucher un créneau, puis choisir une recette (recherche, recettes souvent au menu, mieux notées) ou un texte libre (« Restes », « Cantine »…), avec le nombre de portions.
   - Poupette : bouton « Même chose que les grands ».
   - Vue **compacte** par défaut : la date dans un rond et seuls les repas prévus, pour voir toute la semaine sur un écran. Le bouton en haut à gauche bascule vers la vue détaillée (créneau par créneau).
