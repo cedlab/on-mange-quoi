@@ -43,7 +43,7 @@ route('/membres', membersView, { tab: 'more' });
 route('/corbeille', trashView, { tab: 'more', live: true });
 route('/semaine', weekView, { tab: 'week' });
 route('/reglages', settingsView, { tab: 'more' });
-route('/stats', statsView, { tab: 'stats' });
+route('/stats', statsView, { tab: 'more' });
 route('/envies', selectionView, { tab: 'selection' });
 
 function isDemo() {

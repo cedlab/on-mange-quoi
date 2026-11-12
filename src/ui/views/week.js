@@ -20,6 +20,7 @@ import { plannedFromSelection, selectionLabel } from './selection.js';
 import { deliverFile } from '../deliver-file.js';
 import { makeSortable } from '../drag-sort.js';
 
+// Premier jour affiché : aujourd'hui par défaut (7 jours à partir de lui).
 let currentWeek = null;
 let selecting = false;
 const selected = new Set();
@@ -362,8 +363,8 @@ function withSource(r, img) {
 
 export function weekView(_, query = {}) {
   const today = todayISO();
-  if (query.date) currentWeek = weekStart(query.date);
-  if (!currentWeek) currentWeek = weekStart(today);
+  if (query.date) currentWeek = query.date < today || query.date > addDays(today, 6) ? query.date : today;
+  if (!currentWeek) currentWeek = today;
   const content = h('div', { class: 'week' });
   const selBar = h('div', { class: 'selection-bar hidden' });
 
@@ -460,22 +461,22 @@ export function weekView(_, query = {}) {
   }
 
   function draw() {
-    const days = weekDays(currentWeek);
+    const days = Array.from({ length: 7 }, (_, i) => addDays(currentWeek, i));
     const end = days[6];
     const planned = plannedDays(store.plans);
     setChildren(content,
       h('div', { class: 'week-nav' },
-        h('button', { class: 'icon-btn', 'aria-label': 'Semaine précédente', onclick: () => go(addDays(currentWeek, -7)) }, icon('back', 20)),
+        h('button', { class: 'icon-btn', 'aria-label': '7 jours avant', onclick: () => go(addDays(currentWeek, -7)) }, icon('back', 20)),
         h('button', {
           class: 'week-title', onclick: () => openCalendar({
             title: 'Aller à…', from: currentWeek, planned,
-            actions: [{ label: 'Voir cette semaine', primary: true, onPick: (a) => go(weekStart(a)) }],
+            actions: [{ label: 'Voir à partir de ce jour', primary: true, onPick: (a) => go(a) }],
           }),
-        }, h('strong', null, `${formatShort(currentWeek).replace(/^\S+ /, '')} → ${formatShort(end).replace(/^\S+ /, '')}`), h('small', null, 'Semaine · toucher pour le calendrier')),
-        h('button', { class: 'icon-btn flip', 'aria-label': 'Semaine suivante', onclick: () => go(addDays(currentWeek, 7)) }, icon('back', 20))),
-      currentWeek !== weekStart(today) && h('button', { class: 'link-btn', onclick: () => go(weekStart(today)) }, '↩︎ Revenir à cette semaine'),
+        }, h('strong', null, `${formatShort(currentWeek).replace(/^\S+ /, '')} → ${formatShort(end).replace(/^\S+ /, '')}`), h('small', null, currentWeek === today ? 'À partir d’aujourd’hui' : 'Toucher pour le calendrier')),
+        h('button', { class: 'icon-btn flip', 'aria-label': '7 jours après', onclick: () => go(addDays(currentWeek, 7)) }, icon('back', 20))),
+      currentWeek !== today && h('button', { class: 'link-btn', onclick: () => go(today) }, '↩︎ Revenir à aujourd’hui'),
       !selecting && h('div', { class: 'week-actions' },
-        h('button', { class: 'btn small primary', onclick: () => pdfMenu(currentWeek) }, '📄 Menu PDF'),
+        h('button', { class: 'btn small primary', onclick: () => pdfMenu(weekStart(currentWeek)) }, '📄 Menu PDF'),
         h('button', { class: 'btn small ghost', onclick: () => { selecting = true; draw(); } }, icon('check', 18), 'Sélectionner'),
         h('button', {
           class: 'btn small ghost', onclick: () => openCalendar({
@@ -483,7 +484,7 @@ export function weekView(_, query = {}) {
             hint: 'Touche le premier jour, puis le dernier.',
             actions: [
               { label: '📄 Menu PDF de ces jours', primary: true, onPick: (a, b) => exportMenuPdf(a, b) },
-              { label: 'Sélectionner ces jours', onPick: (a, b) => { selecting = true; selected.clear(); for (const d of daysBetween(a, b)) selected.add(d); go(weekStart(a)); } },
+              { label: 'Sélectionner ces jours', onPick: (a, b) => { selecting = true; selected.clear(); for (const d of daysBetween(a, b)) selected.add(d); go(a); } },
             ],
           }),
         }, icon('calendar', 18), 'Période')),
@@ -497,7 +498,7 @@ export function weekView(_, query = {}) {
     el: h('div', { class: 'page' },
       header('Planning', {
         actions: [
-          h('button', { class: 'icon-btn', 'aria-label': 'Menu en PDF', onclick: () => pdfMenu(currentWeek) }, icon('download')),
+          h('button', { class: 'icon-btn', 'aria-label': 'Menu en PDF', onclick: () => pdfMenu(weekStart(currentWeek)) }, icon('download')),
           h('a', { class: 'icon-btn', href: '#/reglages', 'aria-label': 'Réglages du planning' }, icon('users')),
         ],
       }),
