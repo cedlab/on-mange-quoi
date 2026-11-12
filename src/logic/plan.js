@@ -48,3 +48,12 @@ export function plannedDays(plans) {
   }
   return days;
 }
+
+/** Déplace l'élément i d'un cran (delta -1 : vers le haut, +1 : vers le bas). Nouvelle liste. */
+export function moveEntry(list, i, delta) {
+  const j = i + delta;
+  if (i < 0 || i >= list.length || j < 0 || j >= list.length) return list.slice();
+  const out = list.slice();
+  [out[i], out[j]] = [out[j], out[i]];
+  return out;
+}

@@ -2492,3 +2492,31 @@ code {
   width: 16px;
   height: 16px;
 }
+
+/* Ordre des plats d'un repas */
+.reorder {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-right: -2px;
+}
+.reorder-btn {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+.reorder-btn:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+.reorder-btn:not(:disabled):active {
+  transform: scale(0.92);
+}
