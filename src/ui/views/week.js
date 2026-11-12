@@ -210,7 +210,8 @@ export function openSlot(date, slotId) {
               h('span', null, fmtServings(e.servings)),
               h('button', { class: 'step-btn small', 'aria-label': 'Plus de portions',
                 onclick: () => save(entries.map((x, j) => (j === i ? { ...x, servings: x.servings + (x.servings < 1 ? 0.5 : 1) } : x))) }, icon('plus', 16)))),
-          r && h('a', { class: 'icon-btn', href: `#/recette/${r.id}`, 'aria-label': 'Voir la recette', onclick: () => s.close() }, icon('book', 18)),
+          // Ouverte avec les portions de ce repas (« ?portions=7 »).
+          r && h('a', { class: 'icon-btn', href: `#/recette/${r.id}${e.servings ? `?portions=${e.servings}` : ''}`, 'aria-label': 'Voir la recette', onclick: () => s.close() }, icon('book', 18)),
           h('button', { class: 'icon-btn', 'aria-label': 'Retirer', onclick: () => save(entries.filter((_, j) => j !== i)) }, icon('close', 18)));
       })),
       slot.child && family.length > 0 && h('button', {

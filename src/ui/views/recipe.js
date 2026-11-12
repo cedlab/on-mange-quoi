@@ -1,7 +1,7 @@
 // Fiche d'une recette : portions et quantités dynamiques, étapes, source.
 import { navigate, store } from '../../app.js';
 import {
-  factorForIngredient, factorForServings, formatQuantity, formatServings, ingredientToLine, unitLabel, fixThermomixIcons, parseIngredientLine } from '../../logic/quantities.js';
+  factorForIngredient, factorForServings, formatQuantity, formatServings, ingredientToLine, unitLabel, fixThermomixIcons, parseIngredientLine, factorForPlannedServings } from '../../logic/quantities.js';
 import {
   CATEGORIES, category, formatMinutes, formatRating, MAX_STARS, normalizeRating, starFills, totalMinutes,
 } from '../../logic/recipes.js';
@@ -17,6 +17,8 @@ import { sourceIcon, sourceTag } from '../source-icon.js';
 
 /** Facteur d'échelle par recette (conservé pendant la session). */
 const factors = new Map();
+/** Recettes dont le facteur vient du planning (oublié à l'ouverture depuis la liste). */
+const plannedIds = new Set();
 /** Étapes cochées pendant la préparation. */
 const doneSteps = new Map();
 let wakeLock = null;
@@ -190,11 +192,26 @@ async function toggleWakeLock(btn) {
   }
 }
 
-export function recipeView({ id }) {
+export function recipeView({ id }, query = {}) {
   const r = store.recipe(id);
   if (!r) {
     return h('div', { class: 'page' }, header('Recette', { back: '#/' }),
       store.loaded ? emptyState('🤷', 'Recette introuvable', 'Elle a peut-être été supprimée.') : h('div', { class: 'spinner' }));
+  }
+  // Depuis le planning (« ?portions=7 ») : les quantités de ce repas, appliquées
+  // à l'ouverture seulement (history.state le retient : un rafraîchissement
+  // n'écrase pas un réglage fait ensuite). Depuis la liste : portions d'origine.
+  if (query.portions !== undefined) {
+    if (!history.state?.planApplied) {
+      const planned = factorForPlannedServings(r.servings, query.portions);
+      if (planned && Math.abs(planned - 1) > 1e-9) factors.set(id, planned);
+      else factors.delete(id);
+      plannedIds.add(id);
+      history.replaceState({ ...(history.state || {}), planApplied: true }, '');
+    }
+  } else if (plannedIds.has(id)) {
+    plannedIds.delete(id);
+    factors.delete(id);
   }
   const factor = factors.get(id) || 1;
   const setFactor = (f) => {
