@@ -220,14 +220,17 @@ export function openSlot(date, slotId) {
               h('span', null, fmtServings(e.servings)),
               h('button', { class: 'step-btn small', 'aria-label': 'Plus de portions',
                 onclick: () => save(entries.map((x, j) => (j === i ? { ...x, servings: x.servings + (x.servings < 1 ? 0.5 : 1) } : x))) }, icon('plus', 16))),
-            e.recipeId && !e.leftover && h('div', { class: 'entry-chips' },
-              // Préparer à l'avance (la veille…) : un rappel « À préparer » ce jour-là.
+            h('div', { class: 'entry-chips' },
+              // Changer de repas ou de jour (midi → soir…).
               h('button', {
+                class: 'prep-chip', type: 'button', onclick: () => moveSheet(date, slotId, i, () => s.close()),
+              }, icon('calendar', 15), 'Déplacer'),
+              e.recipeId && !e.leftover && h('button', {
                 class: `prep-chip ${e.prep ? 'on' : ''}`, type: 'button',
                 onclick: () => prepSheet(date, e, (prep) => save(entries.map((x, j) => (j === i ? withPrep(x, prep) : x)))),
               }, icon('clock', 15), e.prep ? prepLabel(e.prep) : 'Préparer à l’avance'),
               // Prévoir des restes : ajoutés à un autre repas, portions du plat augmentées.
-              (() => {
+              e.recipeId && !e.leftover && (() => {
                 const planned = leftoversFrom(store.plans, date, slotId, e.recipeId);
                 return h('button', {
                   class: `prep-chip ${planned.length ? 'on' : ''}`, type: 'button',
@@ -545,6 +548,69 @@ function taskLine(date, t) {
         }
       },
     }, h('span', { class: 'task-moment' }, MOMENT_WORD[t.moment]), h('span', null, '📝 ', t.text)));
+}
+
+// --- Déplacer un plat -------------------------------------------------------------------
+
+/** Déplace le plat n° index du repas (date, slotId) vers un autre jour ou un autre repas. */
+async function moveMeal(date, slotId, index, to) {
+  const from = slotEntries(store.plans, date, slotId);
+  const entry = from[index];
+  if (!entry || (to.date === date && to.slotId === slotId)) return;
+  const sameDay = to.date === date;
+  const target = slotEntries(store.plans, to.date, to.slotId);
+  await store.setSlot(to.date, to.slotId, [...target, entry]);
+  await store.setSlot(date, slotId, from.filter((_, j) => j !== index));
+  // Restes prévus de ce plat : ils pointent désormais vers son nouveau repas.
+  if (entry.recipeId && !entry.leftover) {
+    for (const l of leftoversFrom(store.plans, date, slotId, entry.recipeId)) {
+      const list = slotEntries(store.plans, l.date, l.slotId);
+      await store.setSlot(l.date, l.slotId, list.map((x) => (x.leftover && x.recipeId === entry.recipeId && x.from?.date === date && x.from?.slotId === slotId
+        ? { ...x, from: { date: to.date, slotId: to.slotId } } : x)));
+    }
+  }
+  return sameDay;
+}
+
+/** « Déplacer » : choisir le jour et le repas (les portions ne changent pas). */
+function moveSheet(date, slotId, index, closeParent) {
+  const entry = slotEntries(store.plans, date, slotId)[index];
+  if (!entry) return;
+  const other = { midi: 'soir', soir: 'midi', midiP: 'soirP', soirP: 'midiP' }[slotId];
+  let d = date;
+  let slot = other;
+  const body = h('div', { class: 'stack' });
+  const days = Array.from({ length: 7 }, (_, i) => addDays(date, i - 3));
+  function draw() {
+    const same = d === date && slot === slotId;
+    setChildren(body,
+      h('p', { class: 'small muted' }, `${entryLabel(entry, store.byId)}, actuellement ${shortDay(date)} ${SLOT_WORD[slotId]}.`),
+      h('div', { class: 'plan-days' }, days.map((x) => h('button', {
+        type: 'button', class: `day-pill ${x === d ? 'selected' : ''} ${x === todayISO() ? 'today' : ''}`, onclick: () => { d = x; draw(); },
+      }, h('small', null, dayName(x).slice(0, 3)), h('strong', null, String(dayNumber(x)))))),
+      h('button', {
+        type: 'button', class: 'link-btn', onclick: () => openCalendar({
+          title: 'Déplacer à quel jour ?', from: d, planned: plannedDays(store.plans),
+          actions: [{ label: 'Ce jour-là', primary: true, onPick: (x) => { d = x; draw(); } }],
+        }),
+      }, 'Autre jour…'),
+      segmented(SLOTS.map((x) => ({ value: x.id, label: x.child ? `Poupette ${x.id === 'midiP' ? 'midi' : 'soir'}` : x.label })), slot, (v) => { slot = v; draw(); }, { className: 'wrap-seg' }),
+      entry.prep && h('p', { class: 'small muted' }, `⏰ Le rappel « ${prepLabel(entry.prep).toLowerCase()} » suivra le plat.`),
+      h('button', {
+        class: 'btn primary big', disabled: same, onclick: async () => {
+          s.close();
+          closeParent?.();
+          try {
+            await moveMeal(date, slotId, index, { date: d, slotId: slot });
+            toast(`${entryLabel(entry, store.byId)} : déplacé ${shortDay(d)} ${SLOT_WORD[slot]}.`);
+          } catch (e) {
+            toast(`Non enregistré : ${e.message}`);
+          }
+        },
+      }, icon('calendar', 20), same ? 'Choisis un autre repas' : `Déplacer ${shortDay(d)} ${SLOT_WORD[slot]}`));
+  }
+  draw();
+  const s = sheet(body, { title: 'Déplacer le plat' });
 }
 
 // --- Restes ------------------------------------------------------------------------------
