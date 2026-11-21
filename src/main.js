@@ -19,6 +19,11 @@ import { selectionView } from './ui/views/selection.js';
 initTheme();
 registerServiceWorker();
 
+// À l'ouverture de l'app (adresse sans page précise), on arrive sur le Planning.
+if (!location.hash || location.hash === '#' || location.hash === '#/') {
+  history.replaceState(null, '', `${location.pathname}${location.search}#/semaine`);
+}
+
 // Partage vers l'app (Android : Partager → On mange quoi) : ?url=…&text=…
 {
   const sp = new URLSearchParams(location.search);
