@@ -2695,3 +2695,18 @@ code {
   text-align: center;
   font-size: 1.05rem;
 }
+
+/* Fenêtre d'un repas : le titre et la photo d'un plat ouvrent sa recette */
+.entry-title {
+  display: block;
+  color: inherit;
+  font-weight: 800;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--primary) 45%, transparent);
+  text-underline-offset: 3px;
+}
+.entry-open {
+  flex: none;
+  display: inline-flex;
+  color: inherit;
+}

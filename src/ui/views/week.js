@@ -208,12 +208,20 @@ export function openSlot(date, slotId) {
     setChildren(body,
       entries.length > 0 && sortable(h('div', { class: 'slot-entries' }, entries.map((e, i) => {
         const r = e.recipeId ? store.recipe(e.recipeId) : null;
+        // Ouvrir la recette (titre, photo ou livre), avec les portions de ce repas ;
+        // au retour, la fenêtre de ce repas se rouvre.
+        const href = r ? `#/recette/${r.id}${e.servings ? `?portions=${e.servings}` : ''}` : null;
+        const openRecipe = () => {
+          history.replaceState({ ...(history.state || {}), reopenSlot: { date, slotId } }, '');
+          s.close();
+        };
         return h('div', { class: 'slot-entry' },
           // Plusieurs plats : poignée à glisser pour choisir leur ordre.
           entries.length > 1 && h('span', { class: 'drag-handle', title: 'Glisser pour déplacer', 'aria-label': 'Glisser pour déplacer' }, icon('grip', 20)),
-          r ? thumbWithSource(r, 44) : h('span', { class: 'thumb thumb-empty', style: { width: '44px', height: '44px' } }, e.text ? '✏️' : '🍽️'),
+          r ? h('a', { class: 'entry-open', href, onclick: openRecipe, 'aria-label': `Ouvrir ${r.title}` }, thumbWithSource(r, 44))
+            : h('span', { class: 'thumb thumb-empty', style: { width: '44px', height: '44px' } }, e.text ? '✏️' : '🍽️'),
           h('div', { class: 'grow' },
-            h('strong', null, entryLabel(e, store.byId)),
+            r ? h('a', { class: 'entry-title', href, onclick: openRecipe }, entryLabel(e, store.byId)) : h('strong', null, entryLabel(e, store.byId)),
             e.recipeId && h('div', { class: 'mini-stepper' },
               h('button', { class: 'step-btn small', 'aria-label': 'Moins de portions', disabled: e.servings <= 0.5,
                 onclick: () => save(entries.map((x, j) => (j === i ? { ...x, servings: Math.max(0.5, x.servings - (x.servings > 1 ? 1 : 0.5)) } : x))) }, icon('minus', 16)),
@@ -238,14 +246,7 @@ export function openSlot(date, slotId) {
                 }, '♻️ ', planned.length ? `Restes : ${planned.map((p) => `${dayName(p.date).slice(0, 3).toLowerCase()}. ${SLOT_WORD[p.slotId]}`).join(', ')}` : 'Prévoir des restes');
               })())),
           // Ouverte avec les portions de ce repas (« ?portions=7 »).
-          r && h('a', {
-            class: 'icon-btn', href: `#/recette/${r.id}${e.servings ? `?portions=${e.servings}` : ''}`, 'aria-label': 'Voir la recette',
-            onclick: () => {
-              // Au retour, la fenêtre de ce repas se rouvre.
-              history.replaceState({ ...(history.state || {}), reopenSlot: { date, slotId } }, '');
-              s.close();
-            },
-          }, icon('book', 18)),
+          r && h('a', { class: 'icon-btn', href, 'aria-label': 'Voir la recette', onclick: openRecipe }, icon('book', 18)),
           h('button', { class: 'icon-btn', 'aria-label': 'Retirer', onclick: () => save(entries.filter((_, j) => j !== i)) }, icon('close', 18)));
       }))),
       slot.child && family.length > 0 && h('button', {
