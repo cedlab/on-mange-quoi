@@ -1,6 +1,7 @@
 // Routeur (#/chemin), barre d'onglets et porte de connexion.
 import { h, setChildren } from './ui/dom.js';
 import { icon } from './ui/icons.js';
+import { canGoBack, trackHistory } from './ui/nav.js';
 
 /** @type {import('./data/store.js').Store} */
 export let store;
@@ -31,13 +32,13 @@ export function setGateView(fn) {
 
 export function navigate(path, { replace = false } = {}) {
   const hash = `#${path}`;
-  if (replace) history.replaceState(null, '', hash);
+  if (replace) history.replaceState({ i: history.state?.i }, '', hash);
   else if (location.hash !== hash) history.pushState(null, '', hash);
   render();
 }
 
 export function back(fallback = '/') {
-  if (history.length > 1) history.back();
+  if (canGoBack()) history.back();
   else navigate(fallback, { replace: true });
 }
 
@@ -73,6 +74,7 @@ function mount(result, r, path) {
 }
 
 export function render() {
+  trackHistory();
   const { path, query } = parse();
   for (const r of routes) {
     const m = path.match(r.re);
