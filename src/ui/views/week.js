@@ -208,7 +208,7 @@ export function openSlot(date, slotId) {
     setChildren(body,
       entries.length > 0 && sortable(h('div', { class: 'slot-entries' }, entries.map((e, i) => {
         const r = e.recipeId ? store.recipe(e.recipeId) : null;
-        // Ouvrir la recette (titre, photo ou livre), avec les portions de ce repas ;
+        // Ouvrir la recette (titre ou photo), avec les portions de ce repas ;
         // au retour, la fenêtre de ce repas se rouvre.
         const href = r ? `#/recette/${r.id}${e.servings ? `?portions=${e.servings}` : ''}` : null;
         const openRecipe = () => {
@@ -246,7 +246,6 @@ export function openSlot(date, slotId) {
                 }, '♻️ ', planned.length ? `Restes : ${planned.map((p) => `${dayName(p.date).slice(0, 3).toLowerCase()}. ${SLOT_WORD[p.slotId]}`).join(', ')}` : 'Prévoir des restes');
               })())),
           // Ouverte avec les portions de ce repas (« ?portions=7 »).
-          r && h('a', { class: 'icon-btn', href, 'aria-label': 'Voir la recette', onclick: openRecipe }, icon('book', 18)),
           h('button', { class: 'icon-btn', 'aria-label': 'Retirer', onclick: () => save(entries.filter((_, j) => j !== i)) }, icon('close', 18)));
       }))),
       slot.child && family.length > 0 && h('button', {
