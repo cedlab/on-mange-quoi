@@ -1,6 +1,7 @@
 // Composants d'interface réutilisables.
 import { h } from './dom.js';
 import { icon } from './icons.js';
+import { canGoBack } from './nav.js';
 
 // --- Notifications ------------------------------------------------------------
 
@@ -172,7 +173,14 @@ export function emptyState(emoji, title, text, ...actions) {
 export function header(title, { back, lead, actions = [] } = {}) {
   return h('header', { class: 'topbar' },
     back
-      ? h('a', { class: 'icon-btn', href: back, 'aria-label': 'Retour' }, icon('back'))
+      // Retour à la page d'avant (planning, liste…) ; sinon, à la page prévue.
+      ? h('a', {
+        class: 'icon-btn', href: back, 'aria-label': 'Retour', onclick: (e) => {
+          if (!canGoBack()) return;
+          e.preventDefault();
+          history.back();
+        },
+      }, icon('back'))
       : h('span', { class: 'topbar-spacer' }, lead),
     h('h1', null, title),
     h('div', { class: 'topbar-actions' }, actions));

@@ -238,7 +238,14 @@ export function openSlot(date, slotId) {
                 }, '♻️ ', planned.length ? `Restes : ${planned.map((p) => `${dayName(p.date).slice(0, 3).toLowerCase()}. ${SLOT_WORD[p.slotId]}`).join(', ')}` : 'Prévoir des restes');
               })())),
           // Ouverte avec les portions de ce repas (« ?portions=7 »).
-          r && h('a', { class: 'icon-btn', href: `#/recette/${r.id}${e.servings ? `?portions=${e.servings}` : ''}`, 'aria-label': 'Voir la recette', onclick: () => s.close() }, icon('book', 18)),
+          r && h('a', {
+            class: 'icon-btn', href: `#/recette/${r.id}${e.servings ? `?portions=${e.servings}` : ''}`, 'aria-label': 'Voir la recette',
+            onclick: () => {
+              // Au retour, la fenêtre de ce repas se rouvre.
+              history.replaceState({ ...(history.state || {}), reopenSlot: { date, slotId } }, '');
+              s.close();
+            },
+          }, icon('book', 18)),
           h('button', { class: 'icon-btn', 'aria-label': 'Retirer', onclick: () => save(entries.filter((_, j) => j !== i)) }, icon('close', 18)));
       }))),
       slot.child && family.length > 0 && h('button', {
@@ -884,6 +891,16 @@ export function weekView(_, query = {}) {
 
   const unsub = store.subscribe((k) => (k === 'plans' || k === 'recipes') && draw());
   draw();
+  // Retour depuis une recette ouverte dans la fenêtre d'un repas : on la rouvre.
+  const reopen = history.state?.reopenSlot;
+  if (reopen) {
+    const { reopenSlot, ...rest } = history.state;
+    history.replaceState(rest, '');
+    setTimeout(() => {
+      document.getElementById(`jour-${reopen.date}`)?.scrollIntoView({ block: 'center' });
+      openSlot(reopen.date, reopen.slotId);
+    }, 60);
+  }
   return {
     el: h('div', { class: 'page' },
       header('Planning', {
