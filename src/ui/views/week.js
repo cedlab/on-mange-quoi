@@ -542,12 +542,65 @@ function taskLine(date, t) {
   }
   return h('div', { class: `cday-task ${t.done ? 'done' : ''}` }, toggle,
     h('button', {
-      class: 'task-text', onclick: async () => {
-        if (await confirmDialog(`Supprimer la tâche « ${t.text} » ?`, { ok: 'Supprimer', danger: true })) {
-          await store.setDayTasks(date, ownTasks(date).filter((_, j) => j !== t.index));
-        }
-      },
+      class: 'task-text', onclick: () => todoEditSheet(date, t),
     }, h('span', { class: 'task-moment' }, MOMENT_WORD[t.moment]), h('span', null, '📝 ', t.text)));
+}
+
+/** Toucher une tâche : modifier le texte, le jour (‹ › ou calendrier), le moment, la cocher ou la supprimer. */
+function todoEditSheet(date, t) {
+  const { kind, index, ...orig } = t;
+  const input = h('input', { class: 'input grow', value: t.text, autocomplete: 'off', enterkeyhint: 'done' });
+  let day = date;
+  let moment = t.moment;
+  let done = t.done;
+  const body = h('div', { class: 'stack' });
+  const same = (x, j) => (orig.id ? x.id === orig.id : j === index);
+  function draw() {
+    setChildren(body,
+      h('div', { class: 'row gap' }, input, micButton(input)),
+      h('span', { class: 'field-label' }, 'Quel jour ?'),
+      dayStepper(day, { onPrev: () => { day = addDays(day, -1); draw(); }, onNext: () => { day = addDays(day, 1); draw(); } }),
+      h('button', {
+        type: 'button', class: 'link-btn', onclick: () => openCalendar({
+          title: 'Déplacer la tâche', from: day, planned: plannedDays(store.plans),
+          actions: [{ label: 'Ce jour-là', primary: true, onPick: (x) => { day = x; draw(); } }],
+        }),
+      }, 'Autre jour…'),
+      h('span', { class: 'field-label' }, 'À quel moment ?'),
+      segmented(MOMENTS.map((m) => ({ value: m.id, label: m.label })), moment, (v) => { moment = v; }),
+      h('label', { class: 'task-check' }, h('input', { type: 'checkbox', checked: done, onchange: (e) => { done = e.target.checked; } }), h('span', null, 'Fait')),
+      h('button', {
+        class: 'btn primary big', onclick: async () => {
+          const text = input.value.trim();
+          if (!text) {
+            toast('Écris la tâche.');
+            return;
+          }
+          s.close();
+          const item = { ...orig, id: orig.id || newTaskId(), text, moment, done };
+          try {
+            if (day === date) {
+              await store.setDayTasks(date, ownTasks(date).map((x, j) => (same(x, j) ? item : x)));
+            } else {
+              await store.setDayTasks(date, ownTasks(date).filter((x, j) => !same(x, j)));
+              await store.setDayTasks(day, [...ownTasks(day), item]);
+              toast(`Tâche déplacée : ${shortDay(day)}.`);
+            }
+          } catch (e) {
+            toast(`Non enregistré : ${e.message}`);
+          }
+        },
+      }, 'Enregistrer'),
+      h('button', {
+        class: 'btn danger-ghost', onclick: async () => {
+          s.close();
+          await store.setDayTasks(date, ownTasks(date).filter((x, j) => !same(x, j))).catch((e) => toast(`Non enregistré : ${e.message}`));
+          toast('Tâche supprimée.', { action: 'Annuler', onAction: () => store.setDayTasks(date, [...ownTasks(date), orig]) });
+        },
+      }, 'Supprimer la tâche'));
+  }
+  draw();
+  const s = sheet(body, { title: 'Modifier la tâche' });
 }
 
 // --- Déplacer un plat -------------------------------------------------------------------
